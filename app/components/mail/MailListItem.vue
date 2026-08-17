@@ -17,76 +17,73 @@ const checked = computed(() => isSelected(props.mail.id))
 <template>
   <div
     :class="[
-      'group relative flex items-start gap-2.5 px-3 py-3 cursor-pointer transition-colors',
-      'border-b border-slate-100',
-      active
-        ? 'bg-violet-50'
-        : 'hover:bg-slate-50',
+      'group relative flex items-start gap-2.5 px-3 py-3.5 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0',
+      active ? 'bg-violet-50' : 'hover:bg-slate-50/70'
     ]"
     @click="selectMail(mail.id)"
   >
-    <!-- Unread stripe -->
+    <!-- Unread left stripe -->
     <div
       :class="[
-        'absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full transition-opacity',
-        !mail.read ? 'bg-violet-500 opacity-100' : 'opacity-0'
+        'absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full',
+        !mail.read ? 'bg-violet-500' : 'bg-transparent'
       ]"
     />
 
-    <!-- Checkbox -->
-    <div class="flex items-start pt-0.5 w-4 shrink-0" @click.stop>
+    <!-- Checkbox (visible on hover or when checked) -->
+    <div class="flex items-start pt-1 w-4 shrink-0" @click.stop>
       <input
         type="checkbox"
         :checked="checked"
         :class="[
-          'w-4 h-4 rounded border-slate-300 text-violet-600 cursor-pointer transition-opacity accent-violet-600',
+          'w-4 h-4 rounded border-slate-300 cursor-pointer accent-violet-600 transition-opacity',
           checked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         ]"
         @change="toggleSelectMail(mail.id)"
       />
     </div>
 
-    <!-- Avatar stack -->
-    <div class="shrink-0 relative mt-0.5">
+    <!-- Sender avatar -->
+    <div class="shrink-0 pt-0.5">
       <BaseMailAvatar :name="mail.from.name" size="sm" />
     </div>
 
     <!-- Content -->
     <div class="flex-1 min-w-0">
-      <!-- Row 1: sender + time -->
-      <div class="flex items-center justify-between gap-2 mb-0.5">
+      <!-- Sender name + time -->
+      <div class="flex items-baseline justify-between gap-2 mb-0.5">
         <span
           :class="[
             'text-[13px] truncate',
-            !mail.read ? 'font-bold text-slate-800' : 'font-medium text-slate-600'
+            !mail.read ? 'font-bold text-slate-800' : 'font-medium text-slate-500'
           ]"
         >
           {{ mail.from.name }}
         </span>
-        <span class="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">
+        <span class="text-[11px] text-slate-400 shrink-0 whitespace-nowrap tabular-nums">
           {{ formatDate(mail.date) }}
         </span>
       </div>
 
-      <!-- Row 2: subject -->
+      <!-- Subject -->
       <p
         :class="[
           'text-[13px] truncate mb-1',
-          !mail.read ? 'font-semibold text-slate-700' : 'font-normal text-slate-500'
+          !mail.read ? 'font-semibold text-slate-700' : 'text-slate-400'
         ]"
       >
         {{ mail.subject }}
       </p>
 
-      <!-- Row 3: preview -->
-      <p class="text-[12px] text-slate-400 line-clamp-2 leading-relaxed mb-2">
+      <!-- Preview -->
+      <p class="text-[12px] text-slate-400 leading-relaxed line-clamp-2 mb-2">
         {{ mail.preview }}
       </p>
 
-      <!-- Row 4: badges + star -->
+      <!-- Badges row -->
       <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <!-- Thread count -->
+        <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+          <!-- Thread count badge -->
           <span
             v-if="mail.threadCount && mail.threadCount > 1"
             class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[11px] font-medium rounded-md"
@@ -94,10 +91,10 @@ const checked = computed(() => isSelected(props.mail.id))
             <UIcon name="i-lucide-users" class="w-3 h-3" />
             {{ mail.threadCount }}+
           </span>
-          <!-- Extra avatars count -->
+          <!-- Extra avatars -->
           <span
             v-if="mail.extraAvatars"
-            class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[11px] font-medium rounded-md"
+            class="inline-flex items-center px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[11px] font-medium rounded-md"
           >
             +{{ mail.extraAvatars }}
           </span>
@@ -109,30 +106,36 @@ const checked = computed(() => isSelected(props.mail.id))
             <UIcon name="i-lucide-paperclip" class="w-3 h-3" />
             {{ mail.attachments.length }}
           </span>
-          <!-- Labels -->
+          <!-- Label chips -->
           <BaseMailLabel
-            v-for="lbl in mail.labels"
+            v-for="lbl in (mail.labels ?? [])"
             :key="lbl"
             :label="lbl"
           />
         </div>
 
-        <!-- Star -->
+        <!-- Star button -->
         <button
-          class="shrink-0 transition-opacity focus:outline-none"
-          :class="mail.starred ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+          :class="[
+            'shrink-0 p-0.5 rounded transition-opacity focus:outline-none',
+            mail.starred ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          ]"
           :title="mail.starred ? 'Unstar' : 'Star'"
           @click.stop="toggleStar(mail.id)"
         >
-          <UIcon
-            name="i-lucide-star"
-            :class="[
-              'w-3.5 h-3.5 transition-colors',
-              mail.starred
-                ? 'text-amber-400 fill-amber-400'
-                : 'text-slate-300 hover:text-amber-400'
-            ]"
-          />
+          <!-- Use SVG directly for reliable fill control -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            class="w-3.5 h-3.5 transition-colors"
+            :fill="mail.starred ? '#FBBF24' : 'none'"
+            :stroke="mail.starred ? '#FBBF24' : '#CBD5E1'"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
         </button>
       </div>
     </div>

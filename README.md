@@ -1,64 +1,80 @@
-# Nuxt Starter Template
+# QuiikMail
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+A fast, clean email client built with **Nuxt 4**, **Nuxt UI 4**, and **Tailwind CSS 4**.
 
-Use this template to get started with [Nuxt UI](https://ui.nuxt.com) quickly.
+## Stack
 
-- [Live demo](https://starter-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+| Layer | Tech |
+|---|---|
+| Framework | Nuxt 4 |
+| UI Components | Nuxt UI 4 (Radix + Tailwind) |
+| Styling | Tailwind CSS 4 + custom violet palette |
+| State | `useMailStore` composable (reactive singleton) |
+| Icons | Lucide (via `@iconify-json/lucide`) |
 
-<a href="https://starter-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png">
-    <img alt="Nuxt Starter Template" src="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png" width="830" height="466">
-  </picture>
-</a>
+## Project structure
 
-> The starter template for Vue is on https://github.com/nuxt-ui-templates/starter-vue.
-
-## Quick Start
-
-```bash [Terminal]
-npm create nuxt@latest -- -t ui
+```
+app/
+├── assets/css/main.css          # Custom color palette + global styles
+├── components/
+│   ├── base/                    # Fully reusable primitives
+│   │   ├── EmptyState.vue
+│   │   ├── IconBtn.vue
+│   │   ├── MailAvatar.vue
+│   │   └── MailLabel.vue
+│   └── mail/                    # Mail-specific components
+│       ├── AttachmentItem.vue
+│       ├── MailCompose.vue
+│       ├── MailDetail.vue
+│       ├── MailList.vue
+│       ├── MailListItem.vue
+│       ├── MailSidebar.vue
+│       ├── MailTopBar.vue
+│       └── SidebarItem.vue
+├── composables/
+│   ├── useMailStore.ts          # Central reactive state + all actions
+│   └── useMailFormat.ts         # Date, file size, avatar colour helpers
+├── data/
+│   └── mockMails.ts             # Mock data — remove when API is ready
+├── pages/
+│   └── index.vue                # App shell (sidebar + list + detail)
+├── plugins/
+│   └── mailService.ts           # Nuxt plugin — provides $mail service
+├── services/
+│   └── mailService.ts           # ← YOUR API INTEGRATION GOES HERE
+└── types/
+    └── mail.ts                  # All TypeScript interfaces
 ```
 
-## Deploy your own
+## Connecting your API
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=starter&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fstarter&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fstarter-dark.png&demo-url=https%3A%2F%2Fstarter-template.nuxt.dev%2F&demo-title=Nuxt%20Starter%20Template&demo-description=A%20minimal%20template%20to%20get%20started%20with%20Nuxt%20UI.)
+1. Open `app/services/mailService.ts`
+2. Replace each stub method with real HTTP calls (axios, fetch, $fetch, etc.)
+3. In `app/composables/useMailStore.ts`, replace the mock data imports with calls to `useNuxtApp().$mail`
 
-## Setup
+```ts
+// Example — replace mock in setFolder():
+async function setFolder(folder: MailFolder) {
+  state.activeFolder = folder
+  state.loading = true
+  const { $mail } = useNuxtApp()
+  state.mails = await $mail.fetchMails({ folder })
+  state.loading = false
+}
+```
 
-Make sure to install the dependencies:
+## Dev
 
 ```bash
-pnpm install
+npm install
+npm run dev        # http://localhost:3000
+npm run build
+npm run preview
 ```
 
-## Development Server
+## Color palette
 
-Start the development server on `http://localhost:3000`:
-
-```bash
-pnpm dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-pnpm build
-```
-
-Locally preview production build:
-
-```bash
-pnpm preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
-
-## Renovate integration
-
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+Primary: violet (`#7C3AED` / Tailwind `violet-600`)  
+Page background: `#EEE9FF` (lavender)  
+Custom CSS vars: `--color-qm-50` → `--color-qm-900`
