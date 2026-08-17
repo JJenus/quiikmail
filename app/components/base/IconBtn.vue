@@ -3,11 +3,11 @@ defineProps<{
   icon: string
   label?: string
   active?: boolean
-  color?: string
+  danger?: boolean
   size?: 'xs' | 'sm' | 'md'
   disabled?: boolean
+  class?: string
 }>()
-
 defineEmits<{ click: [] }>()
 </script>
 
@@ -17,16 +17,21 @@ defineEmits<{ click: [] }>()
     :title="label"
     :aria-label="label"
     :class="[
-      'inline-flex items-center justify-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-40 disabled:cursor-not-allowed',
-      size === 'xs' ? 'size-7' : size === 'sm' ? 'size-8' : 'size-9',
+      'inline-flex items-center justify-center rounded-lg transition-all duration-150',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400',
+      'disabled:opacity-40 disabled:cursor-not-allowed',
+      size === 'xs' ? 'w-6 h-6' : size === 'sm' ? 'w-7 h-7' : 'w-8 h-8',
       active
-        ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400'
-        : color === 'danger'
-          ? 'hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-gray-500 dark:text-gray-400'
-          : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+        ? 'bg-violet-100 text-violet-600'
+        : danger
+          ? 'text-slate-400 hover:bg-red-50 hover:text-red-500'
+          : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
     ]"
     @click="$emit('click')"
   >
-    <UIcon :name="icon" :class="size === 'xs' ? 'size-3.5' : size === 'sm' ? 'size-4' : 'size-4.5'" />
+    <UIcon
+      :name="icon"
+      :class="size === 'xs' ? 'w-3 h-3' : size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'"
+    />
   </button>
 </template>

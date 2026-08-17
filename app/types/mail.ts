@@ -1,4 +1,4 @@
-export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'archive' | 'spam' | 'trash'
+export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'important' | 'snoozed' | 'archive' | 'spam' | 'trash'
 
 export interface MailAddress {
   name: string
@@ -31,12 +31,14 @@ export interface Mail {
   attachments?: MailAttachment[]
   labels?: string[]
   threadId?: string
+  threadCount?: number
+  extraAvatars?: number
 }
 
-export interface MailFolder_Config {
-  key: MailFolder
-  label: string
-  icon: string
+export interface MailLabel {
+  id: string
+  name: string
+  color: string
   count?: number
 }
 
@@ -51,6 +53,7 @@ export interface ComposeState {
   showBcc: boolean
   draftId?: string
   minimized: boolean
+  replyTo?: string
 }
 
 export interface MailState {
@@ -62,4 +65,5 @@ export interface MailState {
   compose: ComposeState
   selectedIds: Set<string>
   sidebarOpen: boolean
+  labels: MailLabel[]
 }

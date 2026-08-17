@@ -2,27 +2,38 @@
 import type { MailAttachment } from '~/types/mail'
 import { useMailFormat } from '~/composables/useMailFormat'
 
-defineProps<{
+const props = defineProps<{
   attachment: MailAttachment
 }>()
 
 const { formatFileSize, getFileIcon } = useMailFormat()
+const fileInfo = computed(() => getFileIcon(props.attachment.type))
 </script>
 
 <template>
-  <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group cursor-pointer">
-    <div class="size-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
-      <UIcon :name="getFileIcon(attachment.type)" class="size-4.5 text-gray-500 dark:text-gray-400" />
+  <div
+    class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-slate-200 hover:border-violet-200 hover:bg-violet-50 transition-colors cursor-pointer group"
+  >
+    <!-- Icon -->
+    <div
+      class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+      :style="{ backgroundColor: fileInfo.color + '18' }"
+    >
+      <UIcon
+        :name="fileInfo.icon"
+        class="w-4 h-4"
+        :style="{ color: fileInfo.color }"
+      />
     </div>
+    <!-- Name + size -->
     <div class="flex-1 min-w-0">
-      <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ attachment.name }}</p>
-      <p class="text-xs text-gray-400">{{ formatFileSize(attachment.size) }}</p>
+      <p class="text-[12px] font-medium text-slate-700 truncate">{{ attachment.name }}</p>
+      <p class="text-[11px] text-slate-400">{{ formatFileSize(attachment.size) }}</p>
     </div>
-    <IconBtn
-      icon="i-lucide-download"
-      label="Download"
-      size="sm"
-      class="opacity-0 group-hover:opacity-100 transition-opacity"
+    <!-- Download -->
+    <UIcon
+      name="i-lucide-download"
+      class="w-3.5 h-3.5 text-slate-300 group-hover:text-violet-500 transition-colors"
     />
   </div>
 </template>

@@ -1,78 +1,101 @@
 <script setup lang="ts">
 import { useMailStore } from '~/composables/useMailStore'
 
-const { state, selectMail } = useMailStore()
-
-// On mobile, we show list OR detail, not both
+const { state } = useMailStore()
 const showDetail = computed(() => !!state.selectedId)
 
 useHead({
-  title: 'QuiikMail',
-  meta: [{ name: 'description', content: 'Fast, clean email client' }]
+  title: 'MailZen — Fast, clean email',
+  meta: [{ name: 'description', content: 'Fast, clean email client built with Nuxt UI' }]
 })
 </script>
 
 <template>
-  <div class="flex h-dvh overflow-hidden bg-gray-50 dark:bg-gray-950">
-    <!-- Sidebar — mobile: slide-over overlay, md+: fixed column -->
+  <!-- Lavender page background -->
+  <div class="min-h-dvh bg-[#EEE9FF] flex items-center justify-center p-0 md:p-4 lg:p-6">
+    <!-- App card -->
     <div
-      :class="[
-        'fixed inset-0 z-40 md:relative md:z-auto',
-        'md:flex md:w-64 lg:w-72 md:shrink-0',
-        state.sidebarOpen
-          ? 'flex flex-col'
-          : 'hidden md:flex'
-      ]"
+      class="
+        w-full h-dvh
+        md:h-[calc(100dvh-2rem)] md:max-h-[820px]
+        md:w-full md:max-w-[1280px]
+        md:rounded-2xl
+        bg-white shadow-2xl shadow-violet-200/40
+        flex overflow-hidden
+      "
     >
-      <!-- Mobile overlay backdrop -->
-      <div
-        class="absolute inset-0 bg-black/30 md:hidden"
-        @click="state.sidebarOpen = false"
-      />
-      <!-- Sidebar panel -->
-      <div class="relative z-10 flex flex-col h-full w-72 md:w-full border-r border-gray-100 dark:border-gray-800">
+      <!-- ── Sidebar ── -->
+      <!-- Mobile: slide-over -->
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="state.sidebarOpen"
+          class="fixed inset-0 z-40 md:hidden"
+        >
+          <!-- Backdrop -->
+          <div
+            class="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            @click="state.sidebarOpen = false"
+          />
+          <!-- Panel -->
+          <div class="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl">
+            <MailSidebar />
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Desktop sidebar -->
+      <div class="hidden md:flex md:w-56 lg:w-64 shrink-0 border-r border-slate-100">
         <MailSidebar />
       </div>
-    </div>
 
-    <!-- Main area -->
-    <div class="flex flex-1 min-w-0 overflow-hidden">
-      <div
-        class="flex flex-col flex-1 min-w-0 md:grid md:grid-cols-[320px_1fr] lg:grid-cols-[360px_1fr]"
-      >
-        <!-- List column -->
+      <!-- ── Main: list + detail ── -->
+      <div class="flex flex-1 min-w-0 overflow-hidden">
+
+        <!-- List panel -->
         <div
           :class="[
-            'flex flex-col min-h-0 overflow-hidden',
+            'flex flex-col border-r border-slate-100 overflow-hidden',
+            'w-full md:w-72 lg:w-80 md:shrink-0',
+            // Mobile: hide list when reading a mail
             showDetail ? 'hidden md:flex' : 'flex'
           ]"
         >
-          <!-- Mobile header -->
-          <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-800 md:hidden bg-white dark:bg-gray-900 shrink-0">
-            <IconBtn
-              icon="i-lucide-menu"
-              label="Open sidebar"
+          <!-- Mobile top-bar -->
+          <div class="flex items-center gap-2 px-3 py-3 md:hidden border-b border-slate-100 shrink-0">
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
               @click="state.sidebarOpen = true"
-            />
+            >
+              <UIcon name="i-lucide-menu" class="w-5 h-5" />
+            </button>
             <div class="flex items-center gap-2">
-              <div class="size-6 rounded-lg bg-primary-500 flex items-center justify-center">
-                <UIcon name="i-lucide-zap" class="size-3.5 text-white" />
+              <div class="w-7 h-7 rounded-xl bg-violet-600 flex items-center justify-center">
+                <UIcon name="i-lucide-mail" class="w-4 h-4 text-white" />
               </div>
-              <span class="text-sm font-bold text-gray-900 dark:text-white">QuiikMail</span>
+              <span class="text-[15px] font-bold text-slate-800">MailZen</span>
             </div>
           </div>
-          <MailList class="flex-1 min-h-0" />
+
+          <MailList />
         </div>
 
-        <!-- Detail column -->
+        <!-- Detail panel -->
         <div
           :class="[
-            'flex flex-col min-h-0 overflow-hidden',
+            'flex flex-col flex-1 min-w-0 overflow-hidden',
             showDetail ? 'flex' : 'hidden md:flex'
           ]"
         >
           <MailDetail />
         </div>
+
       </div>
     </div>
 

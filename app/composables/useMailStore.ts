@@ -1,5 +1,5 @@
 import { mockMails } from '~/data/mockMails'
-import type { Mail, MailFolder, MailState, ComposeState } from '~/types/mail'
+import type { Mail, MailFolder, MailState, MailLabel, ComposeState } from '~/types/mail'
 
 const defaultCompose = (): ComposeState => ({
   open: false,
@@ -13,7 +13,13 @@ const defaultCompose = (): ComposeState => ({
   minimized: false
 })
 
-// Module-level singleton state (shared across all composable calls)
+const defaultLabels: MailLabel[] = [
+  { id: 'personal', name: 'Personal', color: '#F59E0B', count: 90 },
+  { id: 'clients', name: 'Clients', color: '#10B981', count: 150 },
+  { id: 'socials', name: 'Socials', color: '#3B82F6', count: 76 }
+]
+
+// Module-level singleton — shared across all composable calls
 const state = reactive<MailState>({
   mails: [...mockMails],
   selectedId: null,
@@ -22,15 +28,17 @@ const state = reactive<MailState>({
   loading: false,
   compose: defaultCompose(),
   selectedIds: new Set(),
-  sidebarOpen: false
+  sidebarOpen: false,
+  labels: [...defaultLabels]
 })
 
 export function useMailStore() {
-  // ─── Getters ────────────────────────────────────────────────
   const folderMails = computed(() => {
     const baseMails = state.activeFolder === 'starred'
       ? state.mails.filter(m => m.starred)
-      : state.mails.filter(m => m.folder === state.activeFolder)
+      : state.activeFolder === 'important'
+        ? state.mails.filter(m => m.starred || m.labels?.includes('Personal'))
+        : state.mails.filter(m => m.folder === state.activeFolder)
 
     if (!state.searchQuery) return baseMails
     const q = state.searchQuery.toLowerCase()
@@ -47,14 +55,18 @@ export function useMailStore() {
 
   const unreadCount = (folder: MailFolder) => {
     if (folder === 'starred') return state.mails.filter(m => m.starred && !m.read).length
+    if (folder === 'important') return state.mails.filter(m => (m.starred || m.labels?.includes('Personal')) && !m.read).length
     return state.mails.filter(m => m.folder === folder && !m.read).length
   }
 
-  const totalUnread = computed(() => unreadCount('inbox'))
+  const folderTotal = (folder: MailFolder) => {
+    if (folder === 'starred') return state.mails.filter(m => m.starred).length
+    if (folder === 'important') return state.mails.filter(m => m.starred || m.labels?.includes('Personal')).length
+    return state.mails.filter(m => m.folder === folder).length
+  }
 
   const isSelected = (id: string) => state.selectedIds.has(id)
 
-  // ─── Actions ────────────────────────────────────────────────
   function selectMail(id: string | null) {
     state.selectedId = id
     if (id) {
@@ -92,13 +104,8 @@ export function useMailStore() {
     if (ids.includes(state.selectedId ?? '')) state.selectedId = null
   }
 
-  function deleteMails(ids: string[]) {
-    moveToFolder(ids, 'trash')
-  }
-
-  function archiveMails(ids: string[]) {
-    moveToFolder(ids, 'archive')
-  }
+  function deleteMails(ids: string[]) { moveToFolder(ids, 'trash') }
+  function archiveMails(ids: string[]) { moveToFolder(ids, 'archive') }
 
   function toggleSelectMail(id: string) {
     const next = new Set(state.selectedIds)
@@ -111,22 +118,15 @@ export function useMailStore() {
     state.selectedIds = new Set(folderMails.value.map(m => m.id))
   }
 
-  function clearSelection() {
-    state.selectedIds = new Set()
-  }
+  function clearSelection() { state.selectedIds = new Set() }
 
-  // ─── Compose ────────────────────────────────────────────────
   function openCompose(prefill?: Partial<ComposeState>) {
     state.compose = { ...defaultCompose(), open: true, ...prefill }
   }
 
-  function closeCompose() {
-    state.compose = defaultCompose()
-  }
+  function closeCompose() { state.compose = defaultCompose() }
 
-  function minimizeCompose() {
-    state.compose.minimized = !state.compose.minimized
-  }
+  function minimizeCompose() { state.compose.minimized = !state.compose.minimized }
 
   function saveDraft() {
     const { to, subject, body } = state.compose
@@ -134,7 +134,6 @@ export function useMailStore() {
     const existing = state.compose.draftId
       ? state.mails.find(m => m.id === state.compose.draftId)
       : null
-
     if (existing) {
       existing.subject = subject || '(no subject)'
       existing.preview = body.slice(0, 100)
@@ -145,7 +144,7 @@ export function useMailStore() {
       const id = `draft-${Date.now()}`
       state.mails.unshift({
         id,
-        from: { name: 'Me', email: 'me@quiikmail.com' },
+        from: { name: 'Me', email: 'edwards.ralph@example.com' },
         to: [{ name: to, email: to }],
         subject: subject || '(no subject)',
         preview: body.slice(0, 100),
@@ -162,14 +161,10 @@ export function useMailStore() {
   function sendMail() {
     const { to, subject, body, draftId } = state.compose
     if (!to) return false
-
-    if (draftId) {
-      state.mails = state.mails.filter(m => m.id !== draftId)
-    }
-
+    if (draftId) state.mails = state.mails.filter(m => m.id !== draftId)
     state.mails.unshift({
       id: `sent-${Date.now()}`,
-      from: { name: 'Me', email: 'me@quiikmail.com' },
+      from: { name: 'Me', email: 'edwards.ralph@example.com' },
       to: [{ name: to, email: to }],
       subject: subject || '(no subject)',
       preview: body.slice(0, 100),
@@ -179,7 +174,6 @@ export function useMailStore() {
       read: true,
       starred: false
     })
-
     closeCompose()
     return true
   }
@@ -188,14 +182,15 @@ export function useMailStore() {
     openCompose({
       to: mail.from.email,
       subject: mail.subject.startsWith('Re:') ? mail.subject : `Re: ${mail.subject}`,
-      body: `\n\n--- On ${new Date(mail.date).toLocaleDateString()}, ${mail.from.name} wrote:\n${mail.body}`
+      body: `\n\n— On ${new Date(mail.date).toLocaleDateString()}, ${mail.from.name} wrote:\n${mail.body}`,
+      replyTo: mail.id
     })
   }
 
   function forwardMail(mail: Mail) {
     openCompose({
       subject: mail.subject.startsWith('Fwd:') ? mail.subject : `Fwd: ${mail.subject}`,
-      body: `\n\n--- Forwarded message ---\nFrom: ${mail.from.name} <${mail.from.email}>\nDate: ${new Date(mail.date).toLocaleDateString()}\nSubject: ${mail.subject}\n\n${mail.body}`
+      body: `\n\n— Forwarded message —\nFrom: ${mail.from.name} <${mail.from.email}>\nDate: ${new Date(mail.date).toLocaleDateString()}\nSubject: ${mail.subject}\n\n${mail.body}`
     })
   }
 
@@ -204,7 +199,7 @@ export function useMailStore() {
     folderMails,
     selectedMail,
     unreadCount,
-    totalUnread,
+    folderTotal,
     isSelected,
     selectMail,
     setFolder,

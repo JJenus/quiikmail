@@ -1,25 +1,33 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-@theme static {
+@theme {
+  /* QuiikMail Purple Palette */
+  --color-qm-50:  #F5F3FF;
+  --color-qm-100: #EDE9FE;
+  --color-qm-200: #DDD6FE;
+  --color-qm-300: #C4B5FD;
+  --color-qm-400: #A78BFA;
+  --color-qm-500: #8B5CF6;
+  --color-qm-600: #7C3AED;
+  --color-qm-700: #6D28D9;
+  --color-qm-800: #5B21B6;
+  --color-qm-900: #4C1D95;
+
+  /* Page background lavender */
+  --color-page-bg: #F0EEFF;
+
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Smooth scrollbar */
+/* Thin scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: theme(colors.gray.300) transparent;
+  scrollbar-color: #DDD6FE transparent;
 }
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-thumb { background: #DDD6FE; border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: #C4B5FD; }
 
-*::-webkit-scrollbar {
-  width: 5px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background-color: theme(colors.gray.300);
-  border-radius: 4px;
-}
-
-.dark *::-webkit-scrollbar-thumb {
-  background-color: theme(colors.gray.700);
-}
+/* Remove default input/textarea outlines inside compose */
+.compose-field:focus { outline: none; }
