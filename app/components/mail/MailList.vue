@@ -25,53 +25,62 @@ function handleSelectAll() {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-white">
-
+  <div class="flex flex-col h-full bg-default">
     <!-- Mobile-only search (desktop search is in MailTopBar) -->
     <div class="md:hidden px-3 pt-3 pb-1 shrink-0">
-      <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-        <UIcon name="i-lucide-search" class="w-4 h-4 text-slate-400 shrink-0" />
-        <input
-          v-model="state.searchQuery"
-          type="text"
-          placeholder="Search mail here..."
-          class="flex-1 bg-transparent text-[13px] text-slate-700 placeholder:text-slate-400 outline-none"
-        />
-        <button
+      <UInput
+        v-model="state.searchQuery"
+        icon="i-lucide-search"
+        placeholder="Search mail here..."
+        variant="subtle"
+      >
+        <template
           v-if="state.searchQuery"
-          class="text-slate-400 hover:text-slate-600 transition-colors"
-          @click="state.searchQuery = ''"
+          #trailing
         >
-          <UIcon name="i-lucide-x" class="w-3.5 h-3.5" />
-        </button>
-      </div>
+          <UButton
+            icon="i-lucide-x"
+            color="neutral"
+            variant="link"
+            size="sm"
+            aria-label="Clear search"
+            @click="state.searchQuery = ''"
+          />
+        </template>
+      </UInput>
     </div>
 
     <!-- Folder heading + meta -->
     <div class="px-4 pt-3 pb-2 shrink-0">
       <div class="flex items-center justify-between gap-2">
         <div>
-          <h2 class="text-[17px] font-bold text-slate-800">
+          <h2 class="text-[17px] font-bold text-highlighted">
             {{ folderLabels[state.activeFolder] ?? state.activeFolder }}
           </h2>
-          <div class="flex items-center gap-2 mt-0.5 text-[12px] text-slate-400">
-            <UIcon name="i-lucide-mails" class="w-3.5 h-3.5" />
+          <div class="flex items-center gap-2 mt-0.5 text-xs text-dimmed">
+            <UIcon
+              name="i-lucide-mails"
+              class="size-3.5"
+            />
             <span>{{ folderMails.length.toLocaleString() }} Messages</span>
-            <span
+            <UBadge
               v-if="unreadCount(state.activeFolder) > 0"
-              class="flex items-center gap-1 text-violet-500 font-medium"
+              color="primary"
+              variant="subtle"
+              size="xs"
             >
-              <UIcon name="i-lucide-circle" class="w-2 h-2 fill-current" />
               {{ unreadCount(state.activeFolder) }} Unread
-            </span>
+            </UBadge>
           </div>
         </div>
-        <button
-          class="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors shrink-0"
-        >
-          <UIcon name="i-lucide-list-filter" class="w-3.5 h-3.5" />
-          Filter
-        </button>
+        <UButton
+          icon="i-lucide-list-filter"
+          label="Filter"
+          color="neutral"
+          variant="outline"
+          size="sm"
+          class="shrink-0"
+        />
       </div>
     </div>
 
@@ -86,21 +95,55 @@ function handleSelectAll() {
     >
       <div
         v-if="anySelected"
-        class="mx-3 mb-1 flex items-center gap-2 px-3 py-2 bg-violet-50 border border-violet-100 rounded-xl shrink-0"
+        class="mx-3 mb-1 flex items-center gap-1 px-3 py-2 bg-primary/10 ring-1 ring-primary/20 rounded-xl shrink-0"
       >
-        <input
-          type="checkbox"
-          :checked="allSelected"
-          class="w-4 h-4 rounded border-slate-300 accent-violet-600 cursor-pointer"
+        <UCheckbox
+          :model-value="allSelected ? true : 'indeterminate'"
           @change="handleSelectAll"
         />
-        <span class="text-[12px] font-medium text-violet-700 flex-1">
+        <span class="text-xs font-medium text-primary flex-1 ms-1">
           {{ state.selectedIds.size }} selected
         </span>
-        <IconBtn icon="i-lucide-archive" label="Archive" size="sm" @click="archiveMails([...state.selectedIds])" />
-        <IconBtn icon="i-lucide-trash-2" label="Delete" size="sm" :danger="true" @click="deleteMails([...state.selectedIds])" />
-        <IconBtn icon="i-lucide-mail-open" label="Mark read" size="sm" @click="markRead([...state.selectedIds], true)" />
-        <IconBtn icon="i-lucide-x" label="Clear" size="sm" @click="clearSelection" />
+        <UTooltip text="Archive">
+          <UButton
+            icon="i-lucide-archive"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            square
+            @click="archiveMails([...state.selectedIds])"
+          />
+        </UTooltip>
+        <UTooltip text="Delete">
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="sm"
+            square
+            @click="deleteMails([...state.selectedIds])"
+          />
+        </UTooltip>
+        <UTooltip text="Mark read">
+          <UButton
+            icon="i-lucide-mail-open"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            square
+            @click="markRead([...state.selectedIds], true)"
+          />
+        </UTooltip>
+        <UTooltip text="Clear selection">
+          <UButton
+            icon="i-lucide-x"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            square
+            @click="clearSelection"
+          />
+        </UTooltip>
       </div>
     </Transition>
 
@@ -114,11 +157,13 @@ function handleSelectAll() {
           :active="state.selectedId === mail.id"
         />
       </template>
-      <BaseEmptyState
+      <UEmpty
         v-else
+        variant="naked"
         icon="i-lucide-inbox"
         title="Nothing here"
         :description="state.searchQuery ? 'No messages match your search.' : 'This folder is empty.'"
+        class="h-full"
       />
     </div>
   </div>

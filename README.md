@@ -8,7 +8,7 @@ A fast, clean email client built with **Nuxt 4**, **Nuxt UI 4**, and **Tailwind 
 |---|---|
 | Framework | Nuxt 4 |
 | UI Components | Nuxt UI 4 (Radix + Tailwind) |
-| Styling | Tailwind CSS 4 + custom violet palette |
+| Styling | Tailwind CSS 4 + custom violet palette + dark mode |
 | State | `useMailStore` composable (reactive singleton) |
 | Icons | Lucide (via `@iconify-json/lucide`) |
 
@@ -16,29 +16,23 @@ A fast, clean email client built with **Nuxt 4**, **Nuxt UI 4**, and **Tailwind 
 
 ```
 app/
-├── assets/css/main.css          # Custom color palette + global styles
-├── components/
-│   ├── base/                    # Fully reusable primitives
-│   │   ├── EmptyState.vue
-│   │   ├── IconBtn.vue
-│   │   ├── MailAvatar.vue
-│   │   └── MailLabel.vue
-│   └── mail/                    # Mail-specific components
-│       ├── AttachmentItem.vue
-│       ├── MailCompose.vue
-│       ├── MailDetail.vue
-│       ├── MailList.vue
-│       ├── MailListItem.vue
-│       ├── MailSidebar.vue
-│       ├── MailTopBar.vue
-│       └── SidebarItem.vue
+├── assets/css/main.css          # Custom palette + global styles (dark-aware)
+├── components/mail/             # All mail-specific components
+│   ├── AttachmentItem.vue
+│   ├── MailCompose.vue          # UModal (desktop) + UDrawer (mobile)
+│   ├── MailDetail.vue
+│   ├── MailList.vue
+│   ├── MailListItem.vue
+│   ├── MailSidebar.vue
+│   ├── MailTopBar.vue
+│   └── SidebarItem.vue
 ├── composables/
 │   ├── useMailStore.ts          # Central reactive state + all actions
 │   └── useMailFormat.ts         # Date, file size, avatar colour helpers
 ├── data/
 │   └── mockMails.ts             # Mock data — remove when API is ready
 ├── pages/
-│   └── index.vue                # App shell (sidebar + list + detail)
+│   └── index.vue                # App shell (UDashboardGroup: sidebar + list + detail)
 ├── plugins/
 │   └── mailService.ts           # Nuxt plugin — provides $mail service
 ├── services/
@@ -67,14 +61,18 @@ async function setFolder(folder: MailFolder) {
 ## Dev
 
 ```bash
-npm install
-npm run dev        # http://localhost:3000
-npm run build
-npm run preview
+pnpm install      # note: pnpm, not npm (packageManager: pnpm@11.20.0)
+pnpm dev          # http://localhost:3000
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm preview
 ```
 
-## Color palette
+## Theme
 
-Primary: violet (`#7C3AED` / Tailwind `violet-600`)  
-Page background: `#EEE9FF` (lavender)  
-Custom CSS vars: `--color-qm-50` → `--color-qm-900`
+- **Dark mode** via `@nuxtjs/color-mode` (bundled with Nuxt UI): `preference: 'system'`, fallback light. Toggle in the topbar (`UColorModeButton`).
+- Use semantic tokens (`bg-default`, `text-muted`, `border-default`, `bg-primary`, …) instead of hardcoded colors.
+- Primary: violet (`#7C3AED` / Tailwind `violet-600`)
+- Page background: `#EEE9FF` light / `#16122B` dark
+- Custom CSS vars: `--color-qm-50` → `--color-qm-900`

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
 import { useMailStore } from '~/composables/useMailStore'
 import { useMailFormat } from '~/composables/useMailFormat'
 
@@ -6,7 +7,7 @@ const {
   state, selectedMail, toggleStar,
   deleteMails, archiveMails, replyTo, forwardMail, selectMail
 } = useMailStore()
-const { formatFullDate } = useMailFormat()
+const { formatFullDate, getInitials, getAvatarBg } = useMailFormat()
 
 const mail = selectedMail
 const showDetails = ref(false)
@@ -40,15 +41,21 @@ function navigateMail(dir: -1 | 1) {
   const next = state.mails[idx + dir]
   if (next) selectMail(next.id)
 }
+
+const moreActions: DropdownMenuItem[] = [
+  { label: 'Archive', icon: 'i-lucide-archive', onSelect: () => handleArchive() },
+  { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => handleDelete() }
+]
 </script>
 
 <template>
   <!-- Empty state -->
   <div
     v-if="!mail"
-    class="flex-1 flex items-center justify-center h-full bg-slate-50/60"
+    class="flex-1 flex items-center justify-center h-full bg-elevated/40"
   >
-    <BaseEmptyState
+    <UEmpty
+      variant="naked"
       icon="i-lucide-mail-open"
       title="Select a message"
       description="Choose a message from the list to read it here."
@@ -56,68 +63,103 @@ function navigateMail(dir: -1 | 1) {
   </div>
 
   <!-- Mail reading pane -->
-  <div v-else class="flex flex-col h-full overflow-hidden">
-
+  <div
+    v-else
+    class="flex flex-col h-full overflow-hidden bg-default"
+  >
     <!-- Per-mail toolbar: back (mobile) + pagination + actions -->
-    <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-white shrink-0">
+    <div class="flex items-center justify-between px-4 py-2.5 border-b border-default shrink-0">
       <div class="flex items-center gap-1">
         <!-- Mobile back -->
-        <button
-          class="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+        <UButton
+          icon="i-lucide-arrow-left"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          square
+          class="md:hidden"
+          aria-label="Back to list"
           @click="selectMail(null)"
-        >
-          <UIcon name="i-lucide-arrow-left" class="w-4 h-4" />
-        </button>
+        />
         <!-- Desktop pagination -->
-        <button
-          class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 transition-colors disabled:opacity-30"
+        <UButton
+          icon="i-lucide-chevron-left"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          square
+          class="hidden md:flex"
           :disabled="currentIndex <= 1"
+          aria-label="Previous message"
           @click="navigateMail(-1)"
-        >
-          <UIcon name="i-lucide-chevron-left" class="w-4 h-4" />
-        </button>
-        <span class="hidden md:block text-[12px] text-slate-400 px-1 tabular-nums select-none">
+        />
+        <span class="hidden md:block text-xs text-dimmed px-1 tabular-nums select-none">
           {{ currentIndex }} of {{ totalMails.toLocaleString() }}
         </span>
-        <button
-          class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 transition-colors disabled:opacity-30"
+        <UButton
+          icon="i-lucide-chevron-right"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          square
+          class="hidden md:flex"
           :disabled="currentIndex >= totalMails"
+          aria-label="Next message"
           @click="navigateMail(1)"
-        >
-          <UIcon name="i-lucide-chevron-right" class="w-4 h-4" />
-        </button>
+        />
       </div>
 
       <!-- Right action bar -->
       <div class="flex items-center gap-1">
-        <IconBtn icon="i-lucide-archive" label="Archive" size="sm" @click="handleArchive" />
-        <IconBtn icon="i-lucide-trash-2" label="Delete" size="sm" :danger="true" @click="handleDelete" />
+        <UTooltip text="Archive">
+          <UButton
+            icon="i-lucide-archive"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            square
+            @click="handleArchive"
+          />
+        </UTooltip>
+        <UTooltip text="Delete">
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="sm"
+            square
+            @click="handleDelete"
+          />
+        </UTooltip>
       </div>
     </div>
 
     <!-- Scrollable content -->
-    <div class="flex-1 overflow-y-auto overscroll-contain bg-white">
+    <div class="flex-1 overflow-y-auto overscroll-contain">
       <div class="max-w-3xl mx-auto px-4 md:px-6 py-5 space-y-5">
-
         <!-- Sender header row -->
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-start gap-3 min-w-0">
-            <BaseMailAvatar :name="mail.from.name" size="md" />
+            <UAvatar
+              :text="getInitials(mail.from.name)"
+              size="lg"
+              :style="{ backgroundColor: getAvatarBg(mail.from.name) }"
+              :ui="{ fallback: 'text-white' }"
+            />
             <div class="min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-[14px] font-bold text-slate-800">{{ mail.from.name }}</span>
-                <span class="text-[12px] text-slate-400 truncate">&lt;{{ mail.from.email }}&gt;</span>
+                <span class="text-sm font-bold text-highlighted">{{ mail.from.name }}</span>
+                <span class="text-xs text-dimmed truncate">&lt;{{ mail.from.email }}&gt;</span>
               </div>
-              <button
-                class="flex items-center gap-1 text-[12px] text-slate-400 hover:text-slate-600 mt-0.5 transition-colors"
+              <UButton
+                :label="showDetails ? 'Hide details' : 'To Me'"
+                color="neutral"
+                variant="link"
+                size="xs"
+                class="mt-0.5 text-dimmed"
+                :icon="showDetails ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
                 @click="showDetails = !showDetails"
-              >
-                <span>To Me</span>
-                <UIcon
-                  :name="showDetails ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                  class="w-3 h-3"
-                />
-              </button>
+              />
               <Transition
                 enter-active-class="transition duration-150 ease-out"
                 enter-from-class="opacity-0 -translate-y-1"
@@ -126,10 +168,13 @@ function navigateMail(dir: -1 | 1) {
                 leave-from-class="opacity-100 translate-y-0"
                 leave-to-class="opacity-0 -translate-y-1"
               >
-                <div v-if="showDetails" class="mt-2 text-[12px] text-slate-400 space-y-0.5">
-                  <p><span class="text-slate-300 mr-1">From:</span>{{ mail.from.name }} &lt;{{ mail.from.email }}&gt;</p>
-                  <p><span class="text-slate-300 mr-1">To:</span>{{ mail.to.map(t => t.email).join(', ') }}</p>
-                  <p><span class="text-slate-300 mr-1">Date:</span>{{ formatFullDate(mail.date) }}</p>
+                <div
+                  v-if="showDetails"
+                  class="mt-2 text-xs text-dimmed space-y-0.5"
+                >
+                  <p><span class="text-muted mr-1">From:</span>{{ mail.from.name }} &lt;{{ mail.from.email }}&gt;</p>
+                  <p><span class="text-muted mr-1">To:</span>{{ mail.to.map(t => t.email).join(', ') }}</p>
+                  <p><span class="text-muted mr-1">Date:</span>{{ formatFullDate(mail.date) }}</p>
                 </div>
               </Transition>
             </div>
@@ -137,65 +182,112 @@ function navigateMail(dir: -1 | 1) {
 
           <!-- Star + action buttons -->
           <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-            <button class="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" @click="toggleStar(mail.id)">
-              <UIcon
-                name="i-lucide-star"
-                :class="['w-4 h-4 transition-colors', mail.starred ? 'text-amber-400 fill-amber-400' : 'text-slate-300 hover:text-amber-400']"
-              />
-            </button>
-            <button
-              class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            <UButton
+              :icon="'i-lucide-star'"
+              :color="mail.starred ? 'warning' : 'neutral'"
+              variant="ghost"
+              size="sm"
+              square
+              :title="mail.starred ? 'Unstar' : 'Star'"
+              @click="toggleStar(mail.id)"
+            />
+            <UButton
+              icon="i-lucide-reply"
+              label="Reply"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              class="hidden sm:flex"
               @click="replyTo(mail)"
-            >
-              <UIcon name="i-lucide-reply" class="w-3.5 h-3.5" /> Reply
-            </button>
-            <button
-              class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            />
+            <UButton
+              icon="i-lucide-reply-all"
+              label="Reply All"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              class="hidden sm:flex"
               @click="replyTo(mail)"
-            >
-              <UIcon name="i-lucide-reply-all" class="w-3.5 h-3.5" /> Reply All
-            </button>
-            <button
-              class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            />
+            <UButton
+              icon="i-lucide-forward"
+              label="Forward"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              class="hidden sm:flex"
               @click="forwardMail(mail)"
+            />
+            <UDropdownMenu
+              :items="moreActions"
+              :content="{ align: 'end' }"
             >
-              <UIcon name="i-lucide-forward" class="w-3.5 h-3.5" /> Forward
-            </button>
-            <IconBtn icon="i-lucide-more-vertical" label="More actions" size="sm" />
+              <UButton
+                icon="i-lucide-more-vertical"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+                aria-label="More actions"
+              />
+            </UDropdownMenu>
           </div>
         </div>
 
         <!-- Date line -->
-        <p class="text-[12px] text-slate-400 flex items-center gap-1.5 -mt-1">
-          <UIcon name="i-lucide-calendar" class="w-3.5 h-3.5" />
+        <p class="text-xs text-dimmed flex items-center gap-1.5 -mt-1">
+          <UIcon
+            name="i-lucide-calendar"
+            class="size-3.5"
+          />
           {{ formatFullDate(mail.date) }}
         </p>
 
         <!-- Subject + label chips -->
         <div>
-          <h1 class="text-[20px] font-bold text-slate-800 leading-snug mb-2">
+          <h1 class="text-xl font-bold text-highlighted leading-snug mb-2">
             {{ mail.subject }}
           </h1>
-          <div v-if="mail.labels?.length" class="flex flex-wrap gap-1.5">
-            <BaseMailLabel
+          <div
+            v-if="mail.labels?.length"
+            class="flex flex-wrap gap-1.5"
+          >
+            <UBadge
               v-for="lbl in mail.labels"
               :key="lbl"
-              :label="lbl"
-              :removable="true"
-            />
+              color="primary"
+              variant="subtle"
+              size="sm"
+            >
+              {{ lbl }}
+              <UButton
+                icon="i-lucide-x"
+                color="primary"
+                variant="link"
+                size="xs"
+                square
+                class="ms-0.5"
+                :aria-label="`Remove ${lbl} label`"
+              />
+            </UBadge>
           </div>
         </div>
 
-        <div class="border-t border-slate-100" />
+        <USeparator />
 
         <!-- Body -->
-        <div class="text-[14px] text-slate-600 leading-relaxed whitespace-pre-wrap">
+        <div class="text-sm text-default leading-relaxed whitespace-pre-wrap">
           {{ mail.body }}
         </div>
 
         <!-- Attachments -->
-        <div v-if="mail.attachments?.length" class="space-y-2.5">
-          <p class="text-[13px] font-semibold text-slate-700">Attachments</p>
+        <div
+          v-if="mail.attachments?.length"
+          class="space-y-2.5"
+        >
+          <p class="text-[13px] font-semibold text-default">
+            Attachments
+          </p>
           <div class="flex flex-wrap gap-2">
             <MailAttachmentItem
               v-for="att in mail.attachments"
@@ -206,54 +298,122 @@ function navigateMail(dir: -1 | 1) {
         </div>
 
         <!-- ── Inline reply box ── -->
-        <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div class="border border-default rounded-2xl overflow-hidden shadow-sm bg-default">
           <!-- To chip row -->
-          <div class="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-white">
-            <span class="text-[12px] text-slate-400 shrink-0">To</span>
-            <div class="flex-1 flex items-center gap-1.5 flex-wrap">
-              <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-50 border border-violet-200 rounded-lg text-[12px] font-medium text-violet-700">
+          <div class="flex items-center gap-2 px-4 py-2.5 border-b border-default">
+            <span class="text-xs text-dimmed shrink-0">To</span>
+            <div class="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
+              <UBadge
+                color="primary"
+                variant="subtle"
+                size="sm"
+              >
                 {{ mail.from.name }}
-                <button class="text-violet-400 hover:text-violet-600 ml-0.5 transition-colors">
-                  <UIcon name="i-lucide-x" class="w-3 h-3" />
-                </button>
-              </span>
+                <UButton
+                  icon="i-lucide-x"
+                  color="primary"
+                  variant="link"
+                  size="xs"
+                  square
+                  class="ms-0.5"
+                  aria-label="Remove recipient"
+                />
+              </UBadge>
             </div>
-            <div class="flex items-center gap-2 shrink-0 text-[12px] text-slate-400">
-              <button class="hover:text-slate-600 font-medium transition-colors">Cc</button>
-              <button class="hover:text-slate-600 font-medium transition-colors">Bcc</button>
-              <button class="hover:text-slate-600 transition-colors">
-                <UIcon name="i-lucide-maximize-2" class="w-3.5 h-3.5" />
-              </button>
+            <div class="flex items-center gap-1 shrink-0">
+              <UButton
+                label="Cc"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                class="text-dimmed"
+              />
+              <UButton
+                label="Bcc"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                class="text-dimmed"
+              />
+              <UButton
+                icon="i-lucide-maximize-2"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                square
+              />
             </div>
           </div>
 
           <!-- Textarea -->
-          <textarea
+          <UTextarea
             v-model="replyBody"
             placeholder="Write your reply..."
-            class="w-full px-4 py-3 text-[13px] text-slate-600 placeholder:text-slate-300 bg-white outline-none resize-none leading-relaxed"
-            rows="4"
+            variant="none"
+            :rows="4"
+            class="w-full"
+            :ui="{ base: 'w-full resize-none px-4 py-3 text-[13px] leading-relaxed' }"
           />
 
           <!-- Formatting toolbar + Send -->
-          <div class="flex items-center justify-between px-3 py-2.5 border-t border-slate-100 bg-white">
+          <div class="flex items-center justify-between px-3 py-2.5 border-t border-default">
             <div class="flex items-center gap-0.5">
-              <IconBtn icon="i-lucide-type" label="Format" size="sm" />
-              <IconBtn icon="i-lucide-bold" label="Bold" size="sm" />
-              <IconBtn icon="i-lucide-italic" label="Italic" size="sm" />
-              <IconBtn icon="i-lucide-smile" label="Emoji" size="sm" />
-              <IconBtn icon="i-lucide-paperclip" label="Attach" size="sm" />
-              <IconBtn icon="i-lucide-link" label="Link" size="sm" />
-              <IconBtn icon="i-lucide-more-horizontal" label="More" size="sm" />
+              <UButton
+                icon="i-lucide-type"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+              />
+              <UButton
+                icon="i-lucide-bold"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+              />
+              <UButton
+                icon="i-lucide-italic"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+              />
+              <UButton
+                icon="i-lucide-smile"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+              />
+              <UButton
+                icon="i-lucide-paperclip"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+              />
+              <UButton
+                icon="i-lucide-link"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+              />
+              <UButton
+                icon="i-lucide-more-horizontal"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+              />
             </div>
-            <button
-              class="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[13px] font-semibold rounded-xl transition-colors"
+            <UButton
+              icon="i-lucide-send"
+              label="Send"
               :disabled="!replyBody.trim()"
               @click="replyTo(mail); replyBody = ''"
-            >
-              Send
-              <UIcon name="i-lucide-send" class="w-3.5 h-3.5" />
-            </button>
+            />
           </div>
         </div>
 

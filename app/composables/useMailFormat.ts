@@ -39,7 +39,7 @@ export function useMailFormat() {
     return colors[Math.abs(hash) % colors.length]!
   }
 
-  function getFileIcon(type: string): { icon: string; color: string } {
+  function getFileIcon(type: string): { icon: string, color: string } {
     if (type === 'application/pdf') return { icon: 'i-lucide-file-text', color: '#EF4444' }
     if (type.includes('word') || type.includes('msword') || type.includes('doc'))
       return { icon: 'i-lucide-file-text', color: '#3B82F6' }

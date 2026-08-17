@@ -14,20 +14,18 @@
   --color-qm-800: #5B21B6;
   --color-qm-900: #4C1D95;
 
-  /* Page background lavender */
+  /* Page background lavender (light) / deep violet (dark) */
   --color-page-bg: #F0EEFF;
+  --color-page-bg-dark: #16122B;
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Thin scrollbars */
+/* Thin scrollbars — follow the UI palette in both modes */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #DDD6FE transparent;
+  scrollbar-color: var(--ui-border) transparent;
 }
 *::-webkit-scrollbar { width: 4px; height: 4px; }
-*::-webkit-scrollbar-thumb { background: #DDD6FE; border-radius: 4px; }
-*::-webkit-scrollbar-thumb:hover { background: #C4B5FD; }
-
-/* Remove default input/textarea outlines inside compose */
-.compose-field:focus { outline: none; }
+*::-webkit-scrollbar-thumb { background: var(--ui-border); border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--ui-text-dimmed); }

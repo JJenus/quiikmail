@@ -89,14 +89,14 @@ export function useMailStore() {
   }
 
   function markRead(ids: string[], read = true) {
-    ids.forEach(id => {
+    ids.forEach((id) => {
       const mail = state.mails.find(m => m.id === id)
       if (mail) mail.read = read
     })
   }
 
   function moveToFolder(ids: string[], folder: MailFolder) {
-    ids.forEach(id => {
+    ids.forEach((id) => {
       const mail = state.mails.find(m => m.id === id)
       if (mail) mail.folder = folder
     })
@@ -104,8 +104,13 @@ export function useMailStore() {
     if (ids.includes(state.selectedId ?? '')) state.selectedId = null
   }
 
-  function deleteMails(ids: string[]) { moveToFolder(ids, 'trash') }
-  function archiveMails(ids: string[]) { moveToFolder(ids, 'archive') }
+  function deleteMails(ids: string[]) {
+    moveToFolder(ids, 'trash')
+  }
+
+  function archiveMails(ids: string[]) {
+    moveToFolder(ids, 'archive')
+  }
 
   function toggleSelectMail(id: string) {
     const next = new Set(state.selectedIds)
@@ -118,15 +123,21 @@ export function useMailStore() {
     state.selectedIds = new Set(folderMails.value.map(m => m.id))
   }
 
-  function clearSelection() { state.selectedIds = new Set() }
+  function clearSelection() {
+    state.selectedIds = new Set()
+  }
 
   function openCompose(prefill?: Partial<ComposeState>) {
     state.compose = { ...defaultCompose(), open: true, ...prefill }
   }
 
-  function closeCompose() { state.compose = defaultCompose() }
+  function closeCompose() {
+    state.compose = defaultCompose()
+  }
 
-  function minimizeCompose() { state.compose.minimized = !state.compose.minimized }
+  function minimizeCompose() {
+    state.compose.minimized = !state.compose.minimized
+  }
 
   function saveDraft() {
     const { to, subject, body } = state.compose
@@ -139,8 +150,7 @@ export function useMailStore() {
       existing.preview = body.slice(0, 100)
       existing.body = body
       existing.date = new Date().toISOString()
-    }
-    else {
+    } else {
       const id = `draft-${Date.now()}`
       state.mails.unshift({
         id,
