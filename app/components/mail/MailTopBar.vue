@@ -84,21 +84,12 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
 </script>
 
 <template>
-  <UDashboardNavbar>
-    <!-- Mobile logo -->
-    <template #title>
-      <div class="flex items-center gap-2 lg:hidden">
-        <div class="size-7 rounded-xl bg-primary flex items-center justify-center">
-          <UIcon
-            name="i-lucide-mail"
-            class="size-4 text-inverted"
-          />
-        </div>
-        <span class="text-[15px] font-bold text-highlighted">QuiikMail</span>
-      </div>
-    </template>
-
-    <!-- Search (desktop) -->
+  <UDashboardNavbar
+    :toggle="false"
+    class="hidden md:flex"
+    :ui="{ center: 'flex' }"
+  >
+    <!-- Search -->
     <template #default>
       <UInput
         v-model="state.searchQuery"
@@ -126,8 +117,6 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
     <!-- Right actions -->
     <template #right>
       <UColorModeButton size="sm" />
-
-      <!-- Notifications -->
       <UDropdownMenu
         :items="notifItems"
         :ui="{ content: 'w-80' }"

@@ -30,21 +30,17 @@ const storagePercent = (storageUsed / storageTotal) * 100
 <template>
   <UDashboardSidebar
     v-model:open="state.sidebarOpen"
-    resizable
-    collapsible
-    :default-size="220"
-    :min-size="180"
-    :max-size="300"
-    :collapsed-size="0"
+    :default-size="256"
     :ui="{
-      header: 'h-auto px-3 pt-5 pb-3',
+      root: 'md:flex min-h-0!',
+      header: 'h-auto shrink-0 flex flex-col items-stretch gap-3 px-3 pt-5 pb-4',
       body: 'flex-1 overflow-y-auto px-2 pb-3 space-y-0.5',
-      footer: 'shrink-0 flex items-center px-4 py-4 border-t border-default'
+      footer: 'shrink-0 px-4 py-4 border-t border-default'
     }"
   >
-    <!-- Logo row -->
-    <template #header="{ collapsed }">
-      <div class="flex items-center justify-between w-full gap-2">
+    <!-- Logo row + compose button -->
+    <template #header>
+      <div class="flex items-center justify-between w-full gap-2 px-1">
         <div class="flex items-center gap-2 min-w-0">
           <div class="size-8 rounded-xl bg-primary flex items-center justify-center shrink-0">
             <UIcon
@@ -52,39 +48,40 @@ const storagePercent = (storageUsed / storageTotal) * 100
               class="size-4 text-inverted"
             />
           </div>
-          <span
-            v-if="!collapsed"
-            class="text-[15px] font-bold text-highlighted tracking-tight truncate"
-          >
+          <span class="text-[15px] font-bold text-highlighted tracking-tight truncate">
             QuiikMail
           </span>
         </div>
         <UButton
-          v-if="!collapsed"
           icon="i-lucide-x"
           color="neutral"
           variant="ghost"
           size="sm"
           square
-          class="lg:hidden"
+          class="md:hidden"
           aria-label="Close sidebar"
           @click="state.sidebarOpen = false"
         />
       </div>
 
-      <!-- Compose -->
       <UButton
+        color="primary"
         block
-        icon="i-lucide-pencil-line"
-        label="Compose"
-        class="mt-3 justify-center"
-        :square="collapsed"
+        class="py-2.5 rounded-xl"
         @click="openCompose()"
-      />
+      >
+        Compose
+        <template #trailing>
+          <UIcon
+            name="i-lucide-pencil-line"
+            class="size-4"
+          />
+        </template>
+      </UButton>
     </template>
 
     <!-- Folder navigation -->
-    <template #default="{ collapsed }">
+    <template #default>
       <MailSidebarItem
         v-for="f in mainFolders"
         :key="f.key"
@@ -92,15 +89,11 @@ const storagePercent = (storageUsed / storageTotal) * 100
         :label="f.label"
         :count="folderTotal(f.key)"
         :active="state.activeFolder === f.key"
-        :collapsed="collapsed"
         @click="setFolder(f.key)"
       />
 
       <!-- Other section -->
-      <div
-        v-if="!collapsed"
-        class="pt-3"
-      >
+      <div class="pt-3">
         <UButton
           color="neutral"
           variant="ghost"
@@ -122,17 +115,13 @@ const storagePercent = (storageUsed / storageTotal) * 100
             :label="f.label"
             :count="folderTotal(f.key)"
             :active="state.activeFolder === f.key"
-            :collapsed="collapsed"
             @click="setFolder(f.key)"
           />
         </div>
       </div>
 
       <!-- Labels section -->
-      <div
-        v-if="!collapsed"
-        class="pt-3"
-      >
+      <div class="pt-3">
         <UButton
           color="neutral"
           variant="ghost"

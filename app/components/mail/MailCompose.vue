@@ -20,37 +20,76 @@ function onCloseChange(open: boolean) {
   if (!open) closeCompose()
 }
 
+// Desktop floating window: bottom-right, collapses to just the header when minimized
+const modalUi = computed(() => ({
+  content: [
+    'md:top-auto md:left-auto md:right-6 md:bottom-6 md:translate-x-0 md:translate-y-0',
+    'md:w-[540px] md:max-w-none md:max-h-none md:rounded-2xl',
+    'transition-all duration-200',
+    state.compose.minimized ? 'md:h-12' : 'md:h-[560px]'
+  ].join(' '),
+  header: 'shrink-0 flex items-center gap-2 bg-inverted text-inverted px-4 h-12',
+  body: 'flex-1 overflow-hidden p-0',
+  footer: 'shrink-0 p-0'
+}))
+
+// Mobile bottom sheet
+const drawerUi = computed(() => ({
+  content: [
+    'rounded-t-2xl mt-0 transition-all duration-200',
+    state.compose.minimized ? 'h-12' : 'h-[88vh]'
+  ].join(' '),
+  header: 'shrink-0 flex items-center gap-2 bg-inverted text-inverted px-4 h-12',
+  container: 'flex flex-col flex-1 min-h-0 overflow-hidden p-0',
+  footer: 'shrink-0 p-0'
+}))
+
+const headerButtonClass = 'text-inverted/60 hover:text-inverted hover:bg-white/15 dark:hover:bg-black/10'
+
 // ── Shared field + footer markup (rendered in both Modal and Drawer) ──
 const [DefineComposeFields, ReuseComposeFields] = createReusableTemplate()
 const [DefineComposeFooter, ReuseComposeFooter] = createReusableTemplate()
 </script>
 
 <template>
-  <!-- ── DESKTOP: centered modal ── -->
+  <!-- ── DESKTOP: floating window (bottom-right, no backdrop) ── -->
   <UModal
     :open="compose.open"
-    class="hidden md:block"
-    :ui="{
-      content: 'w-[calc(100vw-2rem)] max-w-xl rounded-2xl',
-      header: 'shrink-0 flex items-center gap-2 border-b border-default px-5 py-3',
-      body: 'flex-1 overflow-hidden p-0',
-      footer: 'shrink-0 p-0',
-      close: 'static shrink-0'
-    }"
+    class="hidden md:flex"
+    :overlay="false"
+    :dismissible="false"
+    :close="false"
+    :ui="modalUi"
     @update:open="onCloseChange"
   >
     <template #header>
-      <span class="flex-1 min-w-0 truncate text-[13px] font-semibold text-highlighted">
+      <span
+        class="flex-1 min-w-0 truncate text-[13px] font-semibold cursor-pointer select-none"
+        @click="minimizeCompose"
+      >
         {{ compose.subject || 'New Message' }}
       </span>
       <UButton
         :icon="compose.minimized ? 'i-lucide-maximize-2' : 'i-lucide-minus'"
         color="neutral"
         variant="ghost"
-        size="sm"
+        size="xs"
         square
+        class="shrink-0"
+        :class="headerButtonClass"
         :title="compose.minimized ? 'Expand' : 'Minimize'"
-        @click="minimizeCompose"
+        @click.stop="minimizeCompose"
+      />
+      <UButton
+        icon="i-lucide-x"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        square
+        class="shrink-0"
+        :class="headerButtonClass"
+        title="Close"
+        @click.stop="closeCompose"
       />
     </template>
 
@@ -68,37 +107,40 @@ const [DefineComposeFooter, ReuseComposeFooter] = createReusableTemplate()
     :open="compose.open"
     direction="bottom"
     class="md:hidden"
-    :ui="{
-      content: 'h-[92dvh] rounded-t-2xl',
-      container: 'flex flex-col flex-1 min-h-0 overflow-hidden p-0',
-      header: 'shrink-0 flex items-center gap-2 px-4 py-3 border-b border-default',
-      footer: 'shrink-0 p-0'
-    }"
+    :overlay="false"
+    :handle="false"
+    :dismissible="false"
+    :ui="drawerUi"
     @update:open="onCloseChange"
   >
     <template #header>
-      <span class="flex-1 min-w-0 truncate text-sm font-semibold text-highlighted">
+      <span
+        class="flex-1 min-w-0 truncate text-[13px] font-semibold cursor-pointer select-none"
+        @click="minimizeCompose"
+      >
         {{ compose.subject || 'New Message' }}
       </span>
     </template>
 
     <template #actions>
       <UButton
-        :icon="compose.minimized ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+        :icon="compose.minimized ? 'i-lucide-maximize-2' : 'i-lucide-minus'"
         color="neutral"
         variant="ghost"
-        size="sm"
+        size="xs"
         square
-        aria-label="Minimize"
+        :class="headerButtonClass"
+        :title="compose.minimized ? 'Expand' : 'Minimize'"
         @click="minimizeCompose"
       />
       <UButton
         icon="i-lucide-x"
         color="neutral"
         variant="ghost"
-        size="sm"
+        size="xs"
         square
-        aria-label="Close"
+        :class="headerButtonClass"
+        title="Close"
         @click="closeCompose"
       />
     </template>
@@ -117,7 +159,7 @@ const [DefineComposeFooter, ReuseComposeFooter] = createReusableTemplate()
     <div class="flex flex-col flex-1 min-h-0">
       <div class="border-b border-default">
         <!-- To -->
-        <div class="flex items-center gap-3 px-5 py-2.5 border-b border-default">
+        <div class="flex items-center gap-2 px-4 py-2.5 border-b border-default">
           <span class="text-xs font-medium text-dimmed w-8 shrink-0">To</span>
           <UInput
             v-model="state.compose.to"
@@ -150,12 +192,12 @@ const [DefineComposeFooter, ReuseComposeFooter] = createReusableTemplate()
           enter-from-class="opacity-0 -translate-y-1"
           enter-to-class="opacity-100 translate-y-0"
           leave-active-class="transition duration-100 ease-in"
-          leave-from-class="opacity-100"
-          leave-to-class="opacity-0"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 -translate-y-1"
         >
           <div
             v-if="compose.showCc"
-            class="flex items-center gap-3 px-5 py-2.5 border-b border-default"
+            class="flex items-center gap-2 px-4 py-2.5 border-b border-default"
           >
             <span class="text-xs font-medium text-dimmed w-8 shrink-0">Cc</span>
             <UInput
@@ -174,12 +216,12 @@ const [DefineComposeFooter, ReuseComposeFooter] = createReusableTemplate()
           enter-from-class="opacity-0 -translate-y-1"
           enter-to-class="opacity-100 translate-y-0"
           leave-active-class="transition duration-100 ease-in"
-          leave-from-class="opacity-100"
-          leave-to-class="opacity-0"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 -translate-y-1"
         >
           <div
             v-if="compose.showBcc"
-            class="flex items-center gap-3 px-5 py-2.5 border-b border-default"
+            class="flex items-center gap-2 px-4 py-2.5 border-b border-default"
           >
             <span class="text-xs font-medium text-dimmed w-8 shrink-0">Bcc</span>
             <UInput
@@ -193,13 +235,13 @@ const [DefineComposeFooter, ReuseComposeFooter] = createReusableTemplate()
           </div>
         </Transition>
         <!-- Subject -->
-        <div class="flex items-center gap-3 px-5 py-2.5">
+        <div class="flex items-center gap-2 px-4 py-2.5">
           <UInput
             v-model="state.compose.subject"
             placeholder="Subject"
             variant="none"
             class="flex-1"
-            :ui="{ base: 'px-0 py-0 text-[13px] font-semibold' }"
+            :ui="{ base: 'px-0 py-0 text-[13px] font-medium' }"
           />
         </div>
       </div>
@@ -210,7 +252,7 @@ const [DefineComposeFooter, ReuseComposeFooter] = createReusableTemplate()
         placeholder="Write your message..."
         variant="none"
         class="flex-1 min-h-0"
-        :ui="{ base: 'h-full w-full resize-none px-5 py-4 text-[13px] leading-relaxed' }"
+        :ui="{ base: 'h-full w-full resize-none px-4 py-3 text-[13px] leading-relaxed' }"
       />
     </div>
   </DefineComposeFields>
@@ -273,6 +315,7 @@ const [DefineComposeFooter, ReuseComposeFooter] = createReusableTemplate()
           icon="i-lucide-send"
           label="Send"
           :disabled="!compose.to"
+          :ui="{ base: 'rounded-xl px-4 py-2 text-[13px] font-semibold' }"
           @click="handleSend"
         />
       </div>

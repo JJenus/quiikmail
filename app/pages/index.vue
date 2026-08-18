@@ -21,38 +21,71 @@ useHead({
           base: 'absolute inset-0 flex overflow-hidden bg-default rounded-none md:rounded-2xl shadow-2xl shadow-primary/10 ring-1 ring-default'
         }"
       >
-        <!-- Sidebar (desktop panel + mobile slideover) -->
+        <!-- Sidebar (fixed on desktop, slide-over on mobile) -->
         <MailSidebar />
 
-        <!-- List panel -->
-        <UDashboardPanel
-          id="mail-list"
-          resizable
-          :default-size="320"
-          :min-size="260"
-          :max-size="400"
-          class="min-h-0!"
-          :class="showDetail ? 'hidden md:flex' : 'flex'"
-        >
-          <template #header>
-            <MailTopBar />
-          </template>
+        <!-- Main column: global topbar above list + detail -->
+        <div class="flex flex-col flex-1 min-w-0 min-h-0">
+          <MailTopBar />
 
-          <MailList />
-        </UDashboardPanel>
+          <div class="flex flex-1 min-h-0 overflow-hidden">
+            <!-- List panel -->
+            <UDashboardPanel
+              id="mail-list"
+              resizable
+              :default-size="320"
+              :min-size="260"
+              :max-size="400"
+              class="min-h-0!"
+              :class="showDetail ? 'hidden md:flex' : 'flex'"
+              :ui="{ root: 'md:w-(--width)', body: 'flex-1 overflow-hidden p-0' }"
+            >
+              <template #header>
+                <!-- Mobile-only: menu + logo (desktop topbar is in MailTopBar) -->
+                <div class="md:hidden flex items-center gap-2 px-3 py-3 border-b border-default shrink-0 bg-default">
+                  <UButton
+                    icon="i-lucide-menu"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    square
+                    aria-label="Open sidebar"
+                    @click="state.sidebarOpen = true"
+                  />
+                  <div class="flex items-center gap-2">
+                    <div class="size-7 rounded-xl bg-primary flex items-center justify-center">
+                      <UIcon
+                        name="i-lucide-mail"
+                        class="size-4 text-inverted"
+                      />
+                    </div>
+                    <span class="text-[15px] font-bold text-highlighted">QuiikMail</span>
+                  </div>
+                </div>
+              </template>
 
-        <!-- Detail panel -->
-        <UDashboardPanel
-          id="mail-detail"
-          class="min-h-0!"
-          :class="showDetail ? 'flex' : 'hidden md:flex'"
-        >
-          <MailDetail />
-        </UDashboardPanel>
+              <template #body>
+                <MailList />
+              </template>
+            </UDashboardPanel>
+
+            <!-- Detail panel -->
+            <UDashboardPanel
+              id="mail-detail"
+              class="min-h-0!"
+              :class="showDetail ? 'flex' : 'hidden md:flex'"
+              :ui="{ body: 'flex-1 overflow-hidden p-0' }"
+            >
+              <template #body>
+                <MailDetail />
+              </template>
+            </UDashboardPanel>
+          </div>
+        </div>
       </UDashboardGroup>
     </div>
 
-    <!-- Compose (modal on desktop, bottom sheet on mobile) -->
+    <!-- Compose floating window (desktop) / bottom sheet (mobile) -->
     <MailCompose />
   </div>
 </template>
