@@ -93,7 +93,7 @@ const storagePercent = (storageUsed / storageTotal) * 100
       />
 
       <!-- Other section -->
-      <div class="pt-3">
+      <div class="pt-0">
         <UButton
           color="neutral"
           variant="ghost"
@@ -121,7 +121,7 @@ const storagePercent = (storageUsed / storageTotal) * 100
       </div>
 
       <!-- Labels section -->
-      <div class="pt-3">
+      <div class="pt-0">
         <UButton
           color="neutral"
           variant="ghost"
