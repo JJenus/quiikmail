@@ -46,9 +46,9 @@ const checked = computed(() => isSelected(props.mail.id))
     <!-- Sender avatar -->
     <div class="shrink-0 pt-0.5">
       <UAvatar
-        :text="getInitials(mail.from.name)"
+        :text="getInitials(mail.from.name ?? mail.from.email)"
         size="sm"
-        :style="{ backgroundColor: getAvatarBg(mail.from.name) }"
+        :style="{ backgroundColor: getAvatarBg(mail.from.name ?? mail.from.email) }"
         :ui="{ fallback: 'text-white' }"
       />
     </div>
@@ -63,7 +63,7 @@ const checked = computed(() => isSelected(props.mail.id))
             !mail.read ? 'font-bold text-highlighted' : 'font-medium text-muted'
           ]"
         >
-          {{ mail.from.name }}
+          {{ mail.from.name ?? mail.from.email }}
         </span>
         <span class="text-[11px] text-dimmed shrink-0 whitespace-nowrap tabular-nums">
           {{ formatDate(mail.date) }}

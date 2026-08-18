@@ -24,18 +24,20 @@ export function useMailFormat() {
     return `${(bytes / 1048576).toFixed(1)} MB`
   }
 
-  function getInitials(name: string): string {
+  function getInitials(name: string | null | undefined): string {
+    if (!name) return '?'
     return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
   }
 
   // Deterministic color from name — matches design avatars
-  function getAvatarBg(name: string): string {
+  function getAvatarBg(name: string | null | undefined): string {
     const colors = [
       '#7C3AED', '#0EA5E9', '#10B981', '#F59E0B',
       '#EF4444', '#8B5CF6', '#06B6D4', '#F97316'
     ]
     let hash = 0
-    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    const source = name ?? ''
+    for (let i = 0; i < source.length; i++) hash = source.charCodeAt(i) + ((hash << 5) - hash)
     return colors[Math.abs(hash) % colors.length]!
   }
 

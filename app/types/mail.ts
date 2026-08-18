@@ -1,7 +1,7 @@
 export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'important' | 'snoozed' | 'archive' | 'spam' | 'trash'
 
 export interface MailAddress {
-  name: string
+  name: string | null
   email: string
   avatar?: string
 }

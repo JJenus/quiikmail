@@ -21,4 +21,13 @@ export class AuthRepository {
     const [row] = await this.db.insert(users).values(input).returning()
     return row!
   }
+
+  async update(id: string, values: Partial<Pick<User, 'email' | 'passwordHash'>>): Promise<User | undefined> {
+    const [row] = await this.db
+      .update(users)
+      .set(values)
+      .where(eq(users.id, id))
+      .returning()
+    return row
+  }
 }

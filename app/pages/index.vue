@@ -95,6 +95,6 @@ useHead({
     <MailCompose />
 
     <!-- Mailbox setup wizard -->
-    <MailboxSetupModal />
+    <MailSetupModal />
   </div>
 </template>

@@ -30,6 +30,15 @@ export const authService = {
     await $fetch('/api/auth/logout', { method: 'POST' })
   },
 
+  async updateProfile(input: { email?: string | null, currentPassword?: string, newPassword?: string }): Promise<AuthUser> {
+    const body: Record<string, string> = {}
+    if (input.email !== undefined) body.email = input.email || ''
+    if (input.currentPassword) body.currentPassword = input.currentPassword
+    if (input.newPassword) body.newPassword = input.newPassword
+    const res = await $fetch<{ user: AuthUser }>('/api/auth/profile', { method: 'PATCH', body })
+    return res.user
+  },
+
   async me(): Promise<MeResponse | null> {
     try {
       return await $fetch<MeResponse>('/api/auth/me')

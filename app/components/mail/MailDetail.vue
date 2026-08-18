@@ -141,14 +141,14 @@ const moreActions: DropdownMenuItem[] = [
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-start gap-3 min-w-0">
             <UAvatar
-              :text="getInitials(mail.from.name)"
+              :text="getInitials(mail.from.name ?? mail.from.email)"
               size="lg"
-              :style="{ backgroundColor: getAvatarBg(mail.from.name) }"
+              :style="{ backgroundColor: getAvatarBg(mail.from.name ?? mail.from.email) }"
               :ui="{ fallback: 'text-white' }"
             />
             <div class="min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-sm font-bold text-highlighted">{{ mail.from.name }}</span>
+                <span class="text-sm font-bold text-highlighted">{{ mail.from.name ?? mail.from.email }}</span>
                 <span class="text-xs text-dimmed truncate">&lt;{{ mail.from.email }}&gt;</span>
               </div>
               <UButton
@@ -172,7 +172,7 @@ const moreActions: DropdownMenuItem[] = [
                   v-if="showDetails"
                   class="mt-2 text-xs text-dimmed space-y-0.5"
                 >
-                  <p><span class="text-muted mr-1">From:</span>{{ mail.from.name }} &lt;{{ mail.from.email }}&gt;</p>
+                  <p><span class="text-muted mr-1">From:</span>{{ mail.from.name ?? mail.from.email }} &lt;{{ mail.from.email }}&gt;</p>
                   <p><span class="text-muted mr-1">To:</span>{{ mail.to.map(t => t.email).join(', ') }}</p>
                   <p><span class="text-muted mr-1">Date:</span>{{ formatFullDate(mail.date) }}</p>
                 </div>
@@ -308,7 +308,7 @@ const moreActions: DropdownMenuItem[] = [
                 variant="subtle"
                 size="sm"
               >
-                {{ mail.from.name }}
+                {{ mail.from.name ?? mail.from.email }}
                 <UButton
                   icon="i-lucide-x"
                   color="primary"

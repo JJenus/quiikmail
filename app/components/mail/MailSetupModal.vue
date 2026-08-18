@@ -16,6 +16,7 @@ const apiKey = ref('')
 const fromAddress = ref('')
 const autoWebhook = ref(true)
 const keyValid = ref(false)
+const keyLive = ref(true)
 const result = ref<CreateMailboxResult | null>(null)
 const webhookSecret = ref('')
 const savingSecret = ref(false)
@@ -29,6 +30,7 @@ watch(() => state.setupOpen, (open) => {
     error.value = null
     result.value = null
     keyValid.value = false
+    keyLive.value = true
   }
 })
 
@@ -38,7 +40,8 @@ async function validateKey() {
   error.value = null
   try {
     const res = await mailboxService.validateApiKey(apiKey.value)
-    keyValid.value = res.valid && res.live
+    keyValid.value = res.valid
+    keyLive.value = res.live
   } catch (e) {
     error.value = apiErrorMessage(e, 'This Resend API key could not be validated')
     keyValid.value = false
@@ -167,7 +170,7 @@ async function finish() {
               @blur="validateKey"
             />
             <div
-              v-if="keyValid"
+              v-if="keyValid && keyLive"
               class="mt-2 flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400"
             >
               <UIcon
@@ -175,6 +178,16 @@ async function finish() {
                 class="size-4"
               />
               Key validated
+            </div>
+            <div
+              v-else-if="keyValid && !keyLive"
+              class="mt-2 flex items-center gap-1.5 text-sm text-warning"
+            >
+              <UIcon
+                name="i-lucide-triangle-alert"
+                class="size-4"
+              />
+              Key is valid, but it's a test key — production sending may be disabled
             </div>
           </UFormField>
 

@@ -18,6 +18,9 @@ export type ErrorCode
     | 'RESEND_ERROR'
     | 'MAILBOX_CONFLICT'
     | 'CONFLICT'
+    | 'CURRENT_PASSWORD_REQUIRED'
+    | 'INVALID_CURRENT_PASSWORD'
+    | 'NOTHING_TO_UPDATE'
 
 /**
  * Creates a serializable H3-compatible error carrying a stable error code.

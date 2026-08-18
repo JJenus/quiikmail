@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { H3Event } from 'h3'
 import { appError } from '../../core/errors'
 import type { AuthUser } from '../../core/session'
-import type { LoginInput, RegisterInput } from './auth.schemas'
+import type { LoginInput, RegisterInput, UpdateProfileInput } from './auth.schemas'
 import type { AuthRepository } from './auth.repository'
 import type { User } from '../../schemas/users'
 
@@ -48,5 +48,32 @@ export class AuthService {
 
   async logout(event: H3Event): Promise<void> {
     await clearUserSession(event)
+  }
+
+  async updateProfile(event: H3Event, input: UpdateProfileInput): Promise<{ user: AuthUser }> {
+    const session = await requireUserSession(event)
+    const current = await this.repo.findById(session.user.id)
+    if (!current) throw appError(404, 'NOT_FOUND', 'User not found')
+
+    const values: Partial<Pick<User, 'email' | 'passwordHash'>> = {}
+    if (input.email !== undefined) values.email = input.email || null
+
+    if (input.newPassword !== undefined) {
+      if (!input.currentPassword) throw appError(400, 'CURRENT_PASSWORD_REQUIRED', 'Current password is required')
+      const valid = await verifyPassword(current.passwordHash, input.currentPassword)
+      if (!valid) throw appError(400, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect')
+      values.passwordHash = await hashPassword(input.newPassword)
+    }
+
+    if (Object.keys(values).length === 0) {
+      throw appError(400, 'NOTHING_TO_UPDATE', 'Nothing to update')
+    }
+
+    const updated = await this.repo.update(current.id, values)
+    if (!updated) throw appError(404, 'NOT_FOUND', 'User not found')
+
+    const user = toAuthUser(updated)
+    await setUserSession(event, { user })
+    return { user }
   }
 }

@@ -36,8 +36,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
     }
   ],
   [
-    { label: 'My Profile', icon: 'i-lucide-user' },
-    { label: 'Settings', icon: 'i-lucide-settings' }
+    { label: 'Settings', icon: 'i-lucide-settings', onSelect: () => navigateTo('/settings') }
   ],
   [
     {

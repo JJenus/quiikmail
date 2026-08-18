@@ -10,6 +10,7 @@ const email = ref('')
 const password = ref('')
 const error = ref<string | null>(null)
 const loading = ref(false)
+const showPassword = ref(false)
 
 async function submit() {
   error.value = null
@@ -21,7 +22,7 @@ async function submit() {
       password: password.value
     })
     await session.fetch()
-    await navigateTo('/setup')
+    await navigateTo('/')
   } catch (e) {
     error.value = apiErrorMessage(e, 'Could not create the account')
   } finally {
@@ -100,13 +101,25 @@ async function submit() {
             <UInput
               v-model="password"
               name="password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               placeholder="••••••••"
               autocomplete="new-password"
               size="lg"
               class="w-full"
               required
-            />
+            >
+              <template #trailing>
+                <UButton
+                  :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  square
+                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                  @click="showPassword = !showPassword"
+                />
+              </template>
+            </UInput>
           </UFormField>
           <UButton
             type="submit"

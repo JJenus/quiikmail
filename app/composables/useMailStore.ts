@@ -85,7 +85,7 @@ export function useMailStore() {
     const q = state.searchQuery.toLowerCase()
     return state.mails.filter(m =>
       m.subject.toLowerCase().includes(q)
-      || m.from.name.toLowerCase().includes(q)
+      || (m.from.name ?? m.from.email).toLowerCase().includes(q)
       || m.preview.toLowerCase().includes(q)
     )
   })
