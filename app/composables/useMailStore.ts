@@ -1,5 +1,10 @@
-import { mockMails } from '~/data/mockMails'
+import { createMailService } from '~/services/mailService'
+import { authService } from '~/services/authService'
+import { mailboxService } from '~/services/mailboxService'
 import type { Mail, MailFolder, MailState, MailLabel, ComposeState } from '~/types/mail'
+import type { MailboxDto } from '~/types/mailbox'
+
+const service = createMailService()
 
 const defaultCompose = (): ComposeState => ({
   open: false,
@@ -14,14 +19,23 @@ const defaultCompose = (): ComposeState => ({
 })
 
 const defaultLabels: MailLabel[] = [
-  { id: 'personal', name: 'Personal', color: '#F59E0B', count: 90 },
-  { id: 'clients', name: 'Clients', color: '#10B981', count: 150 },
-  { id: 'socials', name: 'Socials', color: '#3B82F6', count: 76 }
+  { id: 'personal', name: 'Personal', color: '#F59E0B' },
+  { id: 'clients', name: 'Clients', color: '#10B981' },
+  { id: 'socials', name: 'Socials', color: '#3B82F6' }
 ]
 
+interface MailStateExtended extends MailState {
+  mailboxes: MailboxDto[]
+  activeMailboxId: string | null
+  initialized: boolean
+  syncing: boolean
+  counts: Record<string, number>
+  setupOpen: boolean
+}
+
 // Module-level singleton — shared across all composable calls
-const state = reactive<MailState>({
-  mails: [...mockMails],
+const state = reactive<MailStateExtended>({
+  mails: [],
   selectedId: null,
   activeFolder: 'inbox',
   searchQuery: '',
@@ -29,20 +43,47 @@ const state = reactive<MailState>({
   compose: defaultCompose(),
   selectedIds: new Set(),
   sidebarOpen: false,
-  labels: [...defaultLabels]
+  labels: [...defaultLabels],
+  mailboxes: [],
+  activeMailboxId: null,
+  initialized: false,
+  syncing: false,
+  counts: {},
+  setupOpen: false
 })
+
+const activeMailbox = computed<MailboxDto | null>(() =>
+  state.mailboxes.find(m => m.id === state.activeMailboxId) ?? null
+)
+
+async function loadFolder(folder: MailFolder, search?: string) {
+  const mailboxId = state.activeMailboxId
+  if (!mailboxId) {
+    state.mails = []
+    state.counts = {}
+    return
+  }
+  state.loading = true
+  try {
+    const res = await service.fetchMails({
+      folder,
+      mailboxId,
+      page: 1,
+      limit: 50,
+      search: search ?? state.searchQuery
+    })
+    state.mails = res.rows
+    state.counts = res.counts
+  } finally {
+    state.loading = false
+  }
+}
 
 export function useMailStore() {
   const folderMails = computed(() => {
-    const baseMails = state.activeFolder === 'starred'
-      ? state.mails.filter(m => m.starred)
-      : state.activeFolder === 'important'
-        ? state.mails.filter(m => m.starred || m.labels?.includes('Personal'))
-        : state.mails.filter(m => m.folder === state.activeFolder)
-
-    if (!state.searchQuery) return baseMails
+    if (!state.searchQuery) return state.mails
     const q = state.searchQuery.toLowerCase()
-    return baseMails.filter(m =>
+    return state.mails.filter(m =>
       m.subject.toLowerCase().includes(q)
       || m.from.name.toLowerCase().includes(q)
       || m.preview.toLowerCase().includes(q)
@@ -54,62 +95,122 @@ export function useMailStore() {
   )
 
   const unreadCount = (folder: MailFolder) => {
-    if (folder === 'starred') return state.mails.filter(m => m.starred && !m.read).length
-    if (folder === 'important') return state.mails.filter(m => (m.starred || m.labels?.includes('Personal')) && !m.read).length
-    return state.mails.filter(m => m.folder === folder && !m.read).length
+    const total = state.counts[folder] ?? 0
+    if (folder === 'starred' || folder === 'important') return total
+    const unread = state.counts[`${folder}_unread`]
+    return unread ?? total
   }
 
-  const folderTotal = (folder: MailFolder) => {
-    if (folder === 'starred') return state.mails.filter(m => m.starred).length
-    if (folder === 'important') return state.mails.filter(m => m.starred || m.labels?.includes('Personal')).length
-    return state.mails.filter(m => m.folder === folder).length
-  }
+  const folderTotal = (folder: MailFolder) => state.counts[folder] ?? 0
 
   const isSelected = (id: string) => state.selectedIds.has(id)
+
+  async function init() {
+    if (state.initialized) return
+    const me = await authService.me()
+    if (!me) return
+    state.mailboxes = me.mailboxes
+    state.initialized = true
+    if (me.mailboxes.length === 0) {
+      state.setupOpen = true
+      return
+    }
+    const saved = localStorage.getItem('quiikmail-mailbox')
+    state.activeMailboxId = me.mailboxes.some(m => m.id === saved)
+      ? saved
+      : me.mailboxes[0]!.id
+    await loadFolder(state.activeFolder)
+  }
+
+  /** Re-fetches mailboxes after setup/removal; loads the first mailbox when none is active. */
+  async function reloadMailboxes() {
+    const me = await authService.me()
+    if (!me) return
+    state.mailboxes = me.mailboxes
+    if (!state.activeMailboxId && me.mailboxes.length > 0) {
+      const saved = localStorage.getItem('quiikmail-mailbox')
+      state.activeMailboxId = me.mailboxes.some(m => m.id === saved)
+        ? saved
+        : me.mailboxes[0]!.id
+      await loadFolder(state.activeFolder)
+    }
+  }
+
+  async function setActiveMailbox(id: string) {
+    if (id === state.activeMailboxId) return
+    state.activeMailboxId = id
+    localStorage.setItem('quiikmail-mailbox', id)
+    state.selectedId = null
+    state.selectedIds = new Set()
+    await loadFolder(state.activeFolder)
+  }
+
+  async function syncNow() {
+    if (!state.activeMailboxId || state.syncing) return
+    state.syncing = true
+    try {
+      await mailboxService.sync(state.activeMailboxId)
+      await loadFolder(state.activeFolder)
+    } finally {
+      state.syncing = false
+    }
+  }
 
   function selectMail(id: string | null) {
     state.selectedId = id
     if (id) {
       const mail = state.mails.find(m => m.id === id)
-      if (mail && !mail.read) mail.read = true
+      if (mail && !mail.read) {
+        mail.read = true
+        if (state.activeMailboxId) service.markRead([id], true, state.activeMailboxId)
+      }
     }
   }
 
-  function setFolder(folder: MailFolder) {
+  async function setFolder(folder: MailFolder) {
     state.activeFolder = folder
     state.selectedId = null
     state.selectedIds = new Set()
     state.searchQuery = ''
     state.sidebarOpen = false
+    await loadFolder(folder)
+  }
+
+  async function refreshMails() {
+    await loadFolder(state.activeFolder, state.searchQuery)
   }
 
   function toggleStar(id: string) {
     const mail = state.mails.find(m => m.id === id)
-    if (mail) mail.starred = !mail.starred
+    if (!mail || !state.activeMailboxId) return
+    mail.starred = !mail.starred
+    service.starMail(id, mail.starred, state.activeMailboxId)
   }
 
-  function markRead(ids: string[], read = true) {
+  async function markRead(ids: string[], read = true) {
     ids.forEach((id) => {
       const mail = state.mails.find(m => m.id === id)
       if (mail) mail.read = read
     })
+    if (state.activeMailboxId) await service.markRead(ids, read, state.activeMailboxId)
   }
 
-  function moveToFolder(ids: string[], folder: MailFolder) {
-    ids.forEach((id) => {
-      const mail = state.mails.find(m => m.id === id)
-      if (mail) mail.folder = folder
-    })
+  async function moveToFolder(ids: string[], folder: MailFolder) {
+    const mailboxId = state.activeMailboxId
+    if (!mailboxId) return
+    state.mails = state.mails.filter(m => !ids.includes(m.id))
     state.selectedIds = new Set()
     if (ids.includes(state.selectedId ?? '')) state.selectedId = null
+    await service.moveToFolder(ids, folder, mailboxId)
+    await loadFolder(state.activeFolder)
   }
 
   function deleteMails(ids: string[]) {
-    moveToFolder(ids, 'trash')
+    return moveToFolder(ids, 'trash')
   }
 
   function archiveMails(ids: string[]) {
-    moveToFolder(ids, 'archive')
+    return moveToFolder(ids, 'archive')
   }
 
   function toggleSelectMail(id: string) {
@@ -139,53 +240,39 @@ export function useMailStore() {
     state.compose.minimized = !state.compose.minimized
   }
 
-  function saveDraft() {
-    const { to, subject, body } = state.compose
-    if (!to && !subject && !body) return
-    const existing = state.compose.draftId
-      ? state.mails.find(m => m.id === state.compose.draftId)
-      : null
-    if (existing) {
-      existing.subject = subject || '(no subject)'
-      existing.preview = body.slice(0, 100)
-      existing.body = body
-      existing.date = new Date().toISOString()
-    } else {
-      const id = `draft-${Date.now()}`
-      state.mails.unshift({
-        id,
-        from: { name: 'Me', email: 'edwards.ralph@example.com' },
-        to: [{ name: to, email: to }],
-        subject: subject || '(no subject)',
-        preview: body.slice(0, 100),
-        body,
-        date: new Date().toISOString(),
-        folder: 'drafts',
-        read: true,
-        starred: false
-      })
-      state.compose.draftId = id
-    }
+  async function saveDraft() {
+    const mailboxId = state.activeMailboxId
+    if (!mailboxId) return null
+    const { to, cc, bcc, subject, body, draftId } = state.compose
+    if (!to && !subject && !body) return null
+    const draft = await service.saveDraft({
+      mailboxId,
+      id: draftId,
+      to,
+      cc,
+      bcc,
+      subject,
+      body
+    })
+    state.compose.draftId = draft.id
+    return draft
   }
 
-  function sendMail() {
-    const { to, subject, body, draftId } = state.compose
+  async function sendMail() {
+    const mailboxId = state.activeMailboxId
+    if (!mailboxId) return false
+    const { to, cc, bcc, subject, body } = state.compose
     if (!to) return false
-    if (draftId) state.mails = state.mails.filter(m => m.id !== draftId)
-    state.mails.unshift({
-      id: `sent-${Date.now()}`,
-      from: { name: 'Me', email: 'edwards.ralph@example.com' },
-      to: [{ name: to, email: to }],
-      subject: subject || '(no subject)',
-      preview: body.slice(0, 100),
-      body,
-      date: new Date().toISOString(),
-      folder: 'sent',
-      read: true,
-      starred: false
-    })
-    closeCompose()
-    return true
+    try {
+      const sent = await service.sendMail({ mailboxId, to, cc, bcc, subject, body })
+      state.mails = state.mails.filter(m => m.id !== state.compose.draftId)
+      state.mails.unshift(sent)
+      closeCompose()
+      await loadFolder(state.activeFolder)
+      return true
+    } catch {
+      return false
+    }
   }
 
   function replyTo(mail: Mail) {
@@ -204,15 +291,29 @@ export function useMailStore() {
     })
   }
 
+  function openSetup() {
+    state.setupOpen = true
+  }
+
+  function closeSetup() {
+    state.setupOpen = false
+  }
+
   return {
     state,
+    activeMailbox,
     folderMails,
     selectedMail,
     unreadCount,
     folderTotal,
     isSelected,
+    init,
+    reloadMailboxes,
+    setActiveMailbox,
+    syncNow,
     selectMail,
     setFolder,
+    refreshMails,
     toggleStar,
     markRead,
     moveToFolder,
@@ -227,6 +328,8 @@ export function useMailStore() {
     saveDraft,
     sendMail,
     replyTo,
-    forwardMail
+    forwardMail,
+    openSetup,
+    closeSetup
   }
 }

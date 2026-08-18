@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { useMailStore } from '~/composables/useMailStore'
 
-const { state } = useMailStore()
+definePageMeta({ middleware: 'auth' })
+
+const { state, init } = useMailStore()
 const showDetail = computed(() => !!state.selectedId)
+
+onMounted(async () => {
+  await init()
+})
 
 useHead({
   title: 'QuiikMail — Fast, clean email',
@@ -87,5 +93,8 @@ useHead({
 
     <!-- Compose floating window (desktop) / bottom sheet (mobile) -->
     <MailCompose />
+
+    <!-- Mailbox setup wizard -->
+    <MailboxSetupModal />
   </div>
 </template>

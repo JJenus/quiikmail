@@ -1,15 +1,18 @@
 # QuiikMail
 
-A fast, clean email client built with **Nuxt 4**, **Nuxt UI 4**, and **Tailwind CSS 4**.
+A fast, clean email client built with **Nuxt 4**, **Nuxt UI 4**, and **Tailwind CSS 4**, backed by a full **Nitro** backend (Resend → Postgres).
 
 ## Stack
 
 | Layer | Tech |
 |---|---|
-| Framework | Nuxt 4 |
+| Framework | Nuxt 4 (app/ + server/ split) |
 | UI Components | Nuxt UI 4 (Radix + Tailwind) |
 | Styling | Tailwind CSS 4 + custom violet palette + dark mode |
 | State | `useMailStore` composable (reactive singleton) |
+| Auth | `nuxt-auth-utils` (session cookies, password hashing) |
+| Data | Postgres via Drizzle ORM |
+| Email | Resend API (send, inbound webhook + polling sync) |
 | Icons | Lucide (via `@iconify-json/lucide`) |
 
 ## Project structure
@@ -18,51 +21,56 @@ A fast, clean email client built with **Nuxt 4**, **Nuxt UI 4**, and **Tailwind 
 app/
 ├── assets/css/main.css          # Custom palette + global styles (dark-aware)
 ├── components/mail/             # All mail-specific components
-│   ├── AttachmentItem.vue
+│   ├── AttachmentItem.vue       # Download via /api/attachments/:id
+│   ├── MailboxSetupModal.vue    # Setup wizard (modal, 2 steps)
 │   ├── MailCompose.vue          # UModal (desktop) + UDrawer (mobile)
 │   ├── MailDetail.vue
 │   ├── MailList.vue
 │   ├── MailListItem.vue
 │   ├── MailSidebar.vue
-│   ├── MailTopBar.vue
+│   ├── MailTopBar.vue           # Mailbox switcher, sync, user menu
 │   └── SidebarItem.vue
 ├── composables/
 │   ├── useMailStore.ts          # Central reactive state + all actions
 │   └── useMailFormat.ts         # Date, file size, avatar colour helpers
-├── data/
-│   └── mockMails.ts             # Mock data — remove when API is ready
+├── middleware/
+│   ├── auth.ts                  # Redirects anonymous users to /login
+│   └── guest.ts                 # Redirects logged-in users away from auth pages
 ├── pages/
-│   └── index.vue                # App shell (UDashboardGroup: sidebar + list + detail)
-├── plugins/
-│   └── mailService.ts           # Nuxt plugin — provides $mail service
+│   ├── index.vue                # App shell (UDashboardGroup: sidebar + list + detail)
+│   ├── login.vue
+│   └── register.vue             # Optional recovery email (separate from mailbox "send from")
 ├── services/
-│   └── mailService.ts           # ← YOUR API INTEGRATION GOES HERE
+│   ├── authService.ts           # register / login / logout / me
+│   ├── mailboxService.ts        # CRUD + validate + sync + webhook secret
+│   └── mailService.ts           # Mails, drafts, flags, folders, attachments
 └── types/
-    └── mail.ts                  # All TypeScript interfaces
+    ├── mail.ts                  # Mail contract shared with the API
+    ├── mailbox.ts               # MailboxDto + API response types
+    └── auth.d.ts                # #auth-utils module augmentation
+server/
+├── api/                         # Thin route handlers (auth, mailboxes, mails, attachments, webhooks)
+├── core/                        # errors, logger, crypto (AES-256-GCM), database, env, container (DI)
+├── middleware/session.ts        # Guards /api/**, skips auth + webhook routes
+├── modules/                     # auth, mailboxes, mails, resend (client + Svix webhook verify), sync
+├── plugins/container.ts         # DI graph
+├── schemas/                     # Drizzle schema (users, mailboxes, mails, attachments)
+└── error-handler.ts             # Error envelope { statusCode, code, message, details? }
 ```
 
-## Connecting your API
+## Setup
 
-1. Open `app/services/mailService.ts`
-2. Replace each stub method with real HTTP calls (axios, fetch, $fetch, etc.)
-3. In `app/composables/useMailStore.ts`, replace the mock data imports with calls to `useNuxtApp().$mail`
-
-```ts
-// Example — replace mock in setFolder():
-async function setFolder(folder: MailFolder) {
-  state.activeFolder = folder
-  state.loading = true
-  const { $mail } = useNuxtApp()
-  state.mails = await $mail.fetchMails({ folder })
-  state.loading = false
-}
-```
+1. Postgres must be running; create the dev role/db (`quiikmail`/`quiikmail`) and copy `.env.example` → `.env` (DB URL, `NUXT_MAIL_ENC_KEY`, `NUXT_SESSION_PASSWORD`, `NUXT_MAIL_APP_URL`).
+2. `pnpm db:push` — sync the Drizzle schema.
+3. `pnpm dev` — http://localhost:3000
+4. Register an account, then connect a mailbox from the setup modal with a Resend API key.
 
 ## Dev
 
 ```bash
 pnpm install      # note: pnpm, not npm (packageManager: pnpm@11.20.0)
 pnpm dev          # http://localhost:3000
+pnpm db:push      # sync schema
 pnpm lint
 pnpm typecheck
 pnpm build

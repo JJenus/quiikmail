@@ -12,6 +12,10 @@ const fileInfo = computed(() => getFileIcon(props.attachment.type))
 
 <template>
   <UButton
+    as="a"
+    :href="`/api/attachments/${props.attachment.id}`"
+    target="_blank"
+    rel="noopener"
     color="neutral"
     variant="outline"
     class="group rounded-xl px-3 py-2.5 justify-start min-w-52"
