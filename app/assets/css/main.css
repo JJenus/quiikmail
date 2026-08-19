@@ -21,7 +21,7 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Thin scrollbars — follow the UI palette in both modes */
+/* Thin scrollbars - follow the UI palette in both modes */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--ui-border) transparent;

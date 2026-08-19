@@ -1,4 +1,5 @@
 export * from './users'
 export * from './mailboxes'
+export * from './mailbox-senders'
 export * from './mails'
 export * from './attachments'

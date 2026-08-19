@@ -25,7 +25,10 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-06-30',
 
   nitro: {
-    errorHandler: './server/error-handler.ts'
+    errorHandler: './server/error-handler.ts',
+    scheduledTasks: {
+      '*/5 * * * *': ['imap-sync']
+    }
   },
 
   eslint: {

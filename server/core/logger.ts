@@ -1,7 +1,7 @@
 import { consola } from 'consola'
 
 /**
- * Scoped loggers — one tagged logger per module for greppable, structured logs.
+ * Scoped loggers - one tagged logger per module for greppable, structured logs.
  */
 
 export const logger = {

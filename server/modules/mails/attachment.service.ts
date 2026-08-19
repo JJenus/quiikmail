@@ -10,11 +10,13 @@ export interface AttachmentDownloadDto {
   filename: string
   size: number
   contentType: string | null
+  data?: Buffer
 }
 
 /**
- * Attachment downloads — serves the signed Resend CDN URL, refreshing it via
- * the API when the previously stored link has expired.
+ * Attachment downloads - serves the signed Resend CDN URL (refreshing it via
+ * the API when the stored link has expired) or the locally stored bytes for
+ * IMAP-sourced attachments.
  */
 export class AttachmentService {
   constructor(
@@ -32,13 +34,25 @@ export class AttachmentService {
 
     const mailbox = await this.mailboxService.requireOwned(userId, mail.mailboxId)
 
+    if (mail.source === 'imap') {
+      if (!attachment.data) throw appError(404, 'NOT_FOUND', 'Attachment has no stored data')
+      return {
+        url: '',
+        expiresAt: null,
+        filename: attachment.filename,
+        size: attachment.size,
+        contentType: attachment.contentType,
+        data: attachment.data
+      }
+    }
+
     if (attachment.downloadUrl && (!attachment.expiresAt || attachment.expiresAt.getTime() > Date.now())) {
       return this.toDto(attachment)
     }
 
-    // Signed URL expired (or missing) — refresh from Resend.
+    // Signed URL expired (or missing) - refresh from Resend.
     const client = this.mailboxService.getResendClient(mailbox)
-    const detail = await client.getAttachment(mail.resendEmailId, attachment.resendAttachmentId)
+    const detail = await client.getAttachment(mail.resendEmailId, attachment.resendAttachmentId!)
     const refreshed = await this.attachmentRepo.updateUrl(
       attachment.id,
       detail.download_url,

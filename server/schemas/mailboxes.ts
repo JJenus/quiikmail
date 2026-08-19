@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { users } from './users'
 
 export const mailboxes = pgTable('mailboxes', {
@@ -6,12 +6,22 @@ export const mailboxes = pgTable('mailboxes', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   provider: text('provider').notNull().default('resend'),
-  apiKeyEnc: text('api_key_enc').notNull(),
+  apiKeyEnc: text('api_key_enc'),
   fromAddress: text('from_address'),
   domain: text('domain'),
   inboundAddress: text('inbound_address'),
   resendWebhookId: text('resend_webhook_id'),
   webhookSecretEnc: text('webhook_secret_enc'),
+  smtpHost: text('smtp_host'),
+  smtpPort: integer('smtp_port'),
+  smtpSecure: boolean('smtp_secure').notNull().default(true),
+  smtpUserEnc: text('smtp_user_enc'),
+  smtpPassEnc: text('smtp_pass_enc'),
+  imapHost: text('imap_host'),
+  imapPort: integer('imap_port'),
+  imapSecure: boolean('imap_secure').notNull().default(true),
+  imapUserEnc: text('imap_user_enc'),
+  imapPassEnc: text('imap_pass_enc'),
   lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 })

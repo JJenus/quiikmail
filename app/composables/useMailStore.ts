@@ -8,6 +8,7 @@ const service = createMailService()
 
 const defaultCompose = (): ComposeState => ({
   open: false,
+  from: '',
   to: '',
   cc: '',
   bcc: '',
@@ -33,7 +34,7 @@ interface MailStateExtended extends MailState {
   setupOpen: boolean
 }
 
-// Module-level singleton — shared across all composable calls
+// Module-level singleton - shared across all composable calls
 const state = reactive<MailStateExtended>({
   mails: [],
   selectedId: null,
@@ -94,12 +95,7 @@ export function useMailStore() {
     state.mails.find(m => m.id === state.selectedId) ?? null
   )
 
-  const unreadCount = (folder: MailFolder) => {
-    const total = state.counts[folder] ?? 0
-    if (folder === 'starred' || folder === 'important') return total
-    const unread = state.counts[`${folder}_unread`]
-    return unread ?? total
-  }
+  const unreadCount = (folder: MailFolder) => state.counts[`${folder}_unread`] ?? 0
 
   const folderTotal = (folder: MailFolder) => state.counts[folder] ?? 0
 
@@ -142,6 +138,7 @@ export function useMailStore() {
     localStorage.setItem('quiikmail-mailbox', id)
     state.selectedId = null
     state.selectedIds = new Set()
+    if (state.compose.open) state.compose.from = ''
     await loadFolder(state.activeFolder)
   }
 
@@ -162,7 +159,7 @@ export function useMailStore() {
       const mail = state.mails.find(m => m.id === id)
       if (mail && !mail.read) {
         mail.read = true
-        if (state.activeMailboxId) service.markRead([id], true, state.activeMailboxId)
+        if (state.activeMailboxId) service.markRead([id], true, state.activeMailboxId).catch(() => {})
       }
     }
   }
@@ -184,7 +181,7 @@ export function useMailStore() {
     const mail = state.mails.find(m => m.id === id)
     if (!mail || !state.activeMailboxId) return
     mail.starred = !mail.starred
-    service.starMail(id, mail.starred, state.activeMailboxId)
+    service.starMail(id, mail.starred, state.activeMailboxId).catch(() => {})
   }
 
   async function markRead(ids: string[], read = true) {
@@ -261,10 +258,10 @@ export function useMailStore() {
   async function sendMail() {
     const mailboxId = state.activeMailboxId
     if (!mailboxId) return false
-    const { to, cc, bcc, subject, body } = state.compose
+    const { to, cc, bcc, subject, body, from } = state.compose
     if (!to) return false
     try {
-      const sent = await service.sendMail({ mailboxId, to, cc, bcc, subject, body })
+      const sent = await service.sendMail({ mailboxId, from: from || undefined, to, cc, bcc, subject, body })
       state.mails = state.mails.filter(m => m.id !== state.compose.draftId)
       state.mails.unshift(sent)
       closeCompose()
@@ -279,7 +276,7 @@ export function useMailStore() {
     openCompose({
       to: mail.from.email,
       subject: mail.subject.startsWith('Re:') ? mail.subject : `Re: ${mail.subject}`,
-      body: `\n\n— On ${new Date(mail.date).toLocaleDateString()}, ${mail.from.name} wrote:\n${mail.body}`,
+      body: `\n\n- On ${new Date(mail.date).toLocaleDateString()}, ${mail.from.name} wrote:\n${mail.body}`,
       replyTo: mail.id
     })
   }
@@ -287,7 +284,7 @@ export function useMailStore() {
   function forwardMail(mail: Mail) {
     openCompose({
       subject: mail.subject.startsWith('Fwd:') ? mail.subject : `Fwd: ${mail.subject}`,
-      body: `\n\n— Forwarded message —\nFrom: ${mail.from.name} <${mail.from.email}>\nDate: ${new Date(mail.date).toLocaleDateString()}\nSubject: ${mail.subject}\n\n${mail.body}`
+      body: `\n\n- Forwarded message -\nFrom: ${mail.from.name} <${mail.from.email}>\nDate: ${new Date(mail.date).toLocaleDateString()}\nSubject: ${mail.subject}\n\n${mail.body}`
     })
   }
 

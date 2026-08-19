@@ -44,6 +44,7 @@ export interface MailLabel {
 
 export interface ComposeState {
   open: boolean
+  from: string
   to: string
   cc: string
   bcc: string

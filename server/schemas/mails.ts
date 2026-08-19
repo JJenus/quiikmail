@@ -5,6 +5,7 @@ export const mails = pgTable('mails', {
   id: text('id').primaryKey(),
   mailboxId: text('mailbox_id').notNull().references(() => mailboxes.id, { onDelete: 'cascade' }),
   resendEmailId: text('resend_email_id').notNull(),
+  source: text('source').notNull().default('resend'),
   fromName: text('from_name'),
   fromEmail: text('from_email').notNull(),
   to: jsonb('to').notNull().$type<Array<{ name: string | null, email: string }>>().default([]),

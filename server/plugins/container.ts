@@ -16,7 +16,7 @@ import { IngestService } from '../modules/sync/ingest.service'
 import { SyncService } from '../modules/sync/sync.service'
 
 /**
- * Dependency graph — everything is wired once at startup.
+ * Dependency graph - everything is wired once at startup.
  * Route handlers resolve services by token.
  */
 export default defineNitroPlugin(() => {
@@ -33,14 +33,14 @@ export default defineNitroPlugin(() => {
 
   register(Tokens.MailboxRepository, mailboxRepository)
 
-  const ingestService = register(Tokens.IngestService, new IngestService(mailRepository, crypto, createClient))
-  register(
-    Tokens.SyncService,
-    new SyncService(mailRepository, mailboxRepository, crypto, createClient, ingestService)
-  )
   const mailboxService = register(
     Tokens.MailboxService,
     new MailboxService(mailboxRepository, crypto, createClient)
+  )
+  const ingestService = register(Tokens.IngestService, new IngestService(mailRepository, crypto, createClient))
+  register(
+    Tokens.SyncService,
+    new SyncService(mailRepository, mailboxRepository, crypto, createClient, ingestService, mailboxService)
   )
   register(Tokens.AuthService, new AuthService(authRepository))
   register(Tokens.MailService, new MailService(mailRepository, attachmentRepository, mailboxService))

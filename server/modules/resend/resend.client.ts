@@ -43,13 +43,13 @@ export class ResendClient {
     return res.json() as Promise<T>
   }
 
-  /** GET /api-keys — used to validate a user-supplied API key. */
+  /** GET /api-keys - used to validate a user-supplied API key. */
   async validateKey(): Promise<ResendApiKeyInfo[]> {
     const res = await this.request<{ data: ResendApiKeyInfo[] }>('/api-keys')
     return res.data
   }
 
-  /** GET /emails/receiving — paginated inbound emails (metadata only). */
+  /** GET /emails/receiving - paginated inbound emails (metadata only). */
   async listReceivedEmails(opts?: { limit?: number, before?: string }): Promise<{
     data: ResendReceivedEmailSummary[]
     has_more: boolean
@@ -63,19 +63,19 @@ export class ResendClient {
     )
   }
 
-  /** GET /emails/receiving/{id} — full email body. */
+  /** GET /emails/receiving/{id} - full email body. */
   async getReceivedEmail(id: string): Promise<ResendReceivedEmailDetail> {
     return this.request<ResendReceivedEmailDetail>(`/emails/receiving/${encodeURIComponent(id)}`)
   }
 
-  /** GET /emails/receiving/{id}/attachments/{attachmentId} — signed CDN download URL. */
+  /** GET /emails/receiving/{id}/attachments/{attachmentId} - signed CDN download URL. */
   async getAttachment(emailId: string, attachmentId: string): Promise<ResendAttachmentDetail> {
     return this.request<ResendAttachmentDetail>(
       `/emails/receiving/${encodeURIComponent(emailId)}/attachments/${encodeURIComponent(attachmentId)}`
     )
   }
 
-  /** POST /webhooks — returns the webhook id plus its whsec_ signing secret (shown once). */
+  /** POST /webhooks - returns the webhook id plus its whsec_ signing secret (shown once). */
   async createWebhook(url: string, events: string[]): Promise<ResendWebhookCreated> {
     return this.request<ResendWebhookCreated>('/webhooks', {
       method: 'POST',
@@ -87,7 +87,7 @@ export class ResendClient {
     await this.request<unknown>(`/webhooks/${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
-  /** POST /emails — send an email. */
+  /** POST /emails - send an email. */
   async sendEmail(payload: ResendSendPayload): Promise<{ id: string }> {
     return this.request<{ id: string }>('/emails', {
       method: 'POST',
@@ -95,7 +95,7 @@ export class ResendClient {
     })
   }
 
-  /** GET /domains — verified sender domains for the account. */
+  /** GET /domains - verified sender domains for the account. */
   async listDomains(): Promise<ResendDomain[]> {
     const res = await this.request<{ data: ResendDomain[] }>('/domains')
     return res.data

@@ -1,5 +1,5 @@
 /**
- * authService.ts — session (register / login / logout / me) API client.
+ * authService.ts - session (register / login / logout / me) API client.
  */
 
 import type { MailboxDto } from '~/types/mailbox'

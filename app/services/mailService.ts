@@ -1,5 +1,5 @@
 /**
- * mailService.ts — real API implementation of the MailService contract.
+ * mailService.ts - real API implementation of the MailService contract.
  * All calls are scoped to a mailbox via `mailboxId`.
  */
 
@@ -16,6 +16,7 @@ export interface FetchMailsOptions {
 
 export interface SendMailPayload {
   mailboxId: string
+  from?: string
   to: string
   cc?: string
   bcc?: string

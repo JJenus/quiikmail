@@ -134,7 +134,7 @@ async function runSync() {
       </UDropdownMenu>
 
       <!-- Sync -->
-      <UTooltip :text="syncFailed ? 'Sync failed' : `Sync now — ${lastSyncedLabel}`">
+      <UTooltip :text="syncFailed ? 'Sync failed' : `Sync now - ${lastSyncedLabel}`">
         <UButton
           icon="i-lucide-refresh-cw"
           color="neutral"

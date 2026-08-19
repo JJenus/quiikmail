@@ -82,7 +82,7 @@ async function submit() {
           </UFormField>
           <UFormField
             label="Recovery email (optional)"
-            hint="Used only to recover your account — never shown to recipients, and independent of any mailbox 'send from' address"
+            hint="Used only to recover your account - never shown to recipients, and independent of any mailbox 'send from' address"
           >
             <UInput
               v-model="email"

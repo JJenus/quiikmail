@@ -3,9 +3,10 @@ import type { ResendClientFactory } from '../resend/resend.client'
 import type { ResendAttachmentDetail } from '../resend/resend.types'
 import type { MailRepository } from '../mails/mail.repository'
 import type { Mailbox } from '../../schemas/mailboxes'
+import type { ImapMessage } from '../smtp/imap.client'
 
 /**
- * Shared ingestion path for a single inbound email — used by both the
+ * Shared ingestion path for a single inbound email - used by both the
  * webhook handler and the polling sync. Idempotent per (mailbox, resendEmailId).
  */
 export class IngestService {
@@ -20,7 +21,7 @@ export class IngestService {
     const existing = await this.mailRepo.findByResendEmailId(mailbox.id, resendEmailId)
     if (existing) return false
 
-    const client = this.createClient(this.crypto.decrypt(mailbox.apiKeyEnc))
+    const client = this.createClient(this.crypto.decrypt(mailbox.apiKeyEnc!))
     const detail = await client.getReceivedEmail(resendEmailId)
     const attachmentsDetail = await Promise.all(
       detail.attachments.map(a =>
@@ -32,6 +33,12 @@ export class IngestService {
       detail,
       attachmentsDetail.filter((a): a is ResendAttachmentDetail => a !== null)
     )
+    return Boolean(created)
+  }
+
+  /** Returns true when the message was newly ingested, false when already known. */
+  async ingestImapMessage(mailbox: Mailbox, message: ImapMessage): Promise<boolean> {
+    const created = await this.mailRepo.upsertFromImap(mailbox.id, message)
     return Boolean(created)
   }
 }

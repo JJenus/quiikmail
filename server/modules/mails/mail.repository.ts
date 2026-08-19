@@ -4,6 +4,7 @@ import { getDatabase } from '../../core/database'
 import { mails, type Mail } from '../../schemas/mails'
 import { attachments } from '../../schemas/attachments'
 import type { ResendAttachmentDetail, ResendReceivedEmailDetail } from '../resend/resend.types'
+import type { ImapMessage } from '../smtp/imap.client'
 
 export interface MailQuery {
   mailboxId: string
@@ -66,13 +67,21 @@ export class MailRepository {
     return { rows, total: Number(totalRow?.count ?? 0) }
   }
 
-  async folderCounts(mailboxId: string): Promise<{ folder: string, count: number }[]> {
+  /** Per-folder totals and unread counts. */
+  async folderCounts(mailboxId: string): Promise<{ folder: string, count: number, unread: number }[]> {
     const rows = await this.db
-      .select({ folder: mails.folder, count: count() })
+      .select({ folder: mails.folder, read: mails.read, count: count() })
       .from(mails)
       .where(eq(mails.mailboxId, mailboxId))
-      .groupBy(mails.folder)
-    return rows.map(r => ({ folder: r.folder, count: Number(r.count) }))
+      .groupBy(mails.folder, mails.read)
+    const byFolder = new Map<string, { count: number, unread: number }>()
+    for (const row of rows) {
+      const entry = byFolder.get(row.folder) ?? { count: 0, unread: 0 }
+      entry.count += Number(row.count)
+      if (!row.read) entry.unread += Number(row.count)
+      byFolder.set(row.folder, entry)
+    }
+    return [...byFolder.entries()].map(([folder, v]) => ({ folder, count: v.count, unread: v.unread }))
   }
 
   async starredCount(mailboxId: string): Promise<number> {
@@ -80,6 +89,14 @@ export class MailRepository {
       .select({ count: count() })
       .from(mails)
       .where(and(eq(mails.mailboxId, mailboxId), eq(mails.starred, true)))
+    return Number(row?.count ?? 0)
+  }
+
+  async starredUnreadCount(mailboxId: string): Promise<number> {
+    const [row] = await this.db
+      .select({ count: count() })
+      .from(mails)
+      .where(and(eq(mails.mailboxId, mailboxId), eq(mails.starred, true), eq(mails.read, false)))
     return Number(row?.count ?? 0)
   }
 
@@ -98,6 +115,57 @@ export class MailRepository {
   async findByResendEmailId(mailboxId: string, resendEmailId: string): Promise<Mail | undefined> {
     return this.db.query.mails.findFirst({
       where: and(eq(mails.mailboxId, mailboxId), eq(mails.resendEmailId, resendEmailId))
+    })
+  }
+
+  /**
+   * Inserts an IMAP-sourced inbound email + its attachment bytes
+   * (transactionally) unless the external key is already known. Returns the
+   * created row or null when skipped as a duplicate.
+   */
+  async upsertFromImap(mailboxId: string, message: ImapMessage): Promise<Mail | null> {
+    const existing = await this.findByResendEmailId(mailboxId, message.externalKey)
+    if (existing) return null
+
+    const mailId = randomUUID()
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(mails)
+        .values({
+          id: mailId,
+          mailboxId,
+          resendEmailId: message.externalKey,
+          source: 'imap',
+          fromName: message.fromName,
+          fromEmail: message.fromEmail,
+          to: message.to,
+          cc: message.cc,
+          bcc: message.bcc,
+          subject: message.subject,
+          bodyText: message.bodyText,
+          bodyHtml: message.bodyHtml,
+          preview: buildPreview(message.bodyText ?? message.bodyHtml ?? ''),
+          receivedAt: message.receivedAt,
+          messageId: message.messageId,
+          folder: 'inbox',
+          read: false,
+          starred: false
+        })
+        .returning()
+      if (message.attachments.length > 0) {
+        await tx.insert(attachments).values(
+          message.attachments.map(a => ({
+            id: randomUUID(),
+            mailId,
+            filename: a.filename,
+            size: a.size,
+            contentType: a.contentType,
+            disposition: a.disposition,
+            data: a.data
+          }))
+        )
+      }
+      return row ?? null
     })
   }
 

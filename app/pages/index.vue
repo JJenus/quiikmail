@@ -11,13 +11,13 @@ onMounted(async () => {
 })
 
 useHead({
-  title: 'QuiikMail — Fast, clean email',
+  title: 'QuiikMail - Fast, clean email',
   meta: [{ name: 'description', content: 'Fast, clean email client built with Nuxt UI' }]
 })
 </script>
 
 <template>
-  <div class="min-h-dvh bg-page-bg dark:bg-page-bg-dark flex items-center justify-center p-0 md:p-4 lg:p-6">
+  <div class="min-h-dvh bg-page-bg dark:bg-page-bg-dark flex items-center justify-center p-0 md:p-4 lg:px-2">
     <!-- App shell card -->
     <div class="relative w-full h-dvh md:h-[calc(100dvh-2rem)] md:max-h-[860px] md:max-w-[1300px]">
       <UDashboardGroup

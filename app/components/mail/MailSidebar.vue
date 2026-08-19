@@ -2,7 +2,7 @@
 import type { MailFolder } from '~/types/mail'
 import { useMailStore } from '~/composables/useMailStore'
 
-const { state, setFolder, folderTotal, openCompose } = useMailStore()
+const { state, setFolder, unreadCount, openCompose } = useMailStore()
 
 const mainFolders = [
   { key: 'inbox' as MailFolder, label: 'Inbox', icon: 'i-lucide-inbox' },
@@ -87,7 +87,7 @@ const storagePercent = (storageUsed / storageTotal) * 100
         :key="f.key"
         :icon="f.icon"
         :label="f.label"
-        :count="folderTotal(f.key)"
+        :badge="unreadCount(f.key)"
         :active="state.activeFolder === f.key"
         @click="setFolder(f.key)"
       />
@@ -113,7 +113,7 @@ const storagePercent = (storageUsed / storageTotal) * 100
             :key="f.key"
             :icon="f.icon"
             :label="f.label"
-            :count="folderTotal(f.key)"
+            :badge="unreadCount(f.key)"
             :active="state.activeFolder === f.key"
             @click="setFolder(f.key)"
           />

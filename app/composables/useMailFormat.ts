@@ -29,7 +29,7 @@ export function useMailFormat() {
     return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
   }
 
-  // Deterministic color from name — matches design avatars
+  // Deterministic color from name - matches design avatars
   function getAvatarBg(name: string | null | undefined): string {
     const colors = [
       '#7C3AED', '#0EA5E9', '#10B981', '#F59E0B',

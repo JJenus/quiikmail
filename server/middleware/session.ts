@@ -1,5 +1,5 @@
 /**
- * Session guard — every /api/** route requires a valid session,
+ * Session guard - every /api/** route requires a valid session,
  * except auth endpoints and the public webhook receiver.
  */
 export default defineEventHandler(async (event) => {

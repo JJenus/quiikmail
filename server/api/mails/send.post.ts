@@ -6,6 +6,7 @@ import type { MailService } from '../../modules/mails/mail.service'
 
 const sendMailSchema = z.object({
   mailboxId: z.string().uuid(),
+  from: z.string().trim().max(254).optional(),
   to: z.array(z.string().trim().min(1)).min(1, 'At least one recipient is required').max(50),
   cc: z.array(z.string().trim().min(1)).max(50).optional(),
   bcc: z.array(z.string().trim().min(1)).max(50).optional(),

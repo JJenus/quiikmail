@@ -1,5 +1,5 @@
 /**
- * Tiny dependency container — services are registered once at startup
+ * Tiny dependency container - services are registered once at startup
  * (server/plugins/container.ts) and resolved by token from route handlers.
  * Constructor injection only; no decorators or frameworks.
  */

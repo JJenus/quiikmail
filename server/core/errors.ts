@@ -1,5 +1,5 @@
 /**
- * App errors — thrown by services, serialized by server/error-handler.ts
+ * App errors - thrown by services, serialized by server/error-handler.ts
  * into { statusCode, code, message, details? }.
  */
 
@@ -16,6 +16,8 @@ export type ErrorCode
     | 'NOT_FOUND'
     | 'INVALID_API_KEY'
     | 'RESEND_ERROR'
+    | 'SMTP_ERROR'
+    | 'IMAP_ERROR'
     | 'MAILBOX_CONFLICT'
     | 'CONFLICT'
     | 'CURRENT_PASSWORD_REQUIRED'

@@ -1,5 +1,6 @@
 import { appError } from '../../core/errors'
 import { logger } from '../../core/logger'
+import { SmtpClient } from '../smtp/smtp.client'
 import type { MailboxService } from '../mailboxes/mailbox.service'
 import type { MailRepository } from './mail.repository'
 import type { AttachmentRepository } from './attachment.repository'
@@ -15,6 +16,7 @@ export interface MailListQuery {
 }
 
 export interface SendInput {
+  from?: string
   to: string[]
   cc?: string[]
   bcc?: string[]
@@ -116,9 +118,14 @@ export class MailService {
 
     const counts = await this.mailRepo.folderCounts(mailboxId)
     const countMap: Record<string, number> = {}
-    for (const c of counts) countMap[c.folder] = c.count
+    for (const c of counts) {
+      countMap[c.folder] = c.count
+      countMap[`${c.folder}_unread`] = c.unread
+    }
     countMap.starred = await this.mailRepo.starredCount(mailboxId)
+    countMap.starred_unread = await this.mailRepo.starredUnreadCount(mailboxId)
     countMap.important = countMap.starred
+    countMap.important_unread = countMap.starred_unread
 
     return { total, page, limit, rows: rows.map(row => toMailDto(row, byMail.get(row.id) ?? [])), counts: countMap }
   }
@@ -133,36 +140,54 @@ export class MailService {
 
   async send(userId: string, mailboxId: string, input: SendInput): Promise<Record<string, unknown>> {
     const mailbox = await this.mailboxService.requireOwned(userId, mailboxId)
-    if (!mailbox.fromAddress) {
-      throw appError(422, 'VALIDATION_ERROR', 'No "Send from" address configured for this mailbox')
-    }
+    const sender = await this.mailboxService.resolveSender(mailboxId, input.from)
+    const fromRaw = sender.name ? `${sender.name} <${sender.email}>` : sender.email
 
-    const client = this.mailboxService.getResendClient(mailbox)
     const toResend = (list: string[]) => list.map((address) => {
       const parsed = parseResendAddress(address)
       return parsed.name ? `${parsed.name} <${parsed.email}>` : parsed.email
     })
 
-    const resend = await client.sendEmail({
-      from: mailbox.fromAddress,
-      to: toResend(input.to),
-      cc: input.cc?.length ? toResend(input.cc) : undefined,
-      bcc: input.bcc?.length ? toResend(input.bcc) : undefined,
-      subject: input.subject,
-      text: input.body
-    })
+    let externalId: string
+    if (mailbox.provider === 'smtp') {
+      const config = this.mailboxService.getSmtpConfig(mailbox)
+      if (!config) throw appError(422, 'VALIDATION_ERROR', 'SMTP connection is not configured for this mailbox')
+      externalId = await new SmtpClient().send(config, {
+        from: fromRaw,
+        to: input.to,
+        cc: input.cc?.length ? input.cc : undefined,
+        bcc: input.bcc?.length ? input.bcc : undefined,
+        subject: input.subject,
+        text: input.body
+      })
+      logger.mail.info(`Mail sent via SMTP (${externalId})`)
+    } else {
+      const client = this.mailboxService.getResendClient(mailbox)
+      const resend = await client.sendEmail({
+        from: fromRaw,
+        to: toResend(input.to),
+        cc: input.cc?.length ? toResend(input.cc) : undefined,
+        bcc: input.bcc?.length ? toResend(input.bcc) : undefined,
+        subject: input.subject,
+        text: input.body
+      }).catch((error: Error) => {
+        logger.mail.warn(`Resend send failed for ${mailbox.id}: ${error.message}`)
+        throw appError(502, 'RESEND_ERROR', 'Could not send this email', { detail: error.message })
+      })
+      externalId = resend.id
+      logger.mail.info(`Mail sent via Resend (${resend.id})`)
+    }
 
     const row = await this.mailRepo.createSent(mailbox.id, {
-      resendId: resend.id,
-      fromName: parseResendAddress(mailbox.fromAddress).name,
-      fromEmail: parseResendAddress(mailbox.fromAddress).email,
+      resendId: externalId,
+      fromName: sender.name,
+      fromEmail: sender.email,
       to: formatAddressList(input.to),
       cc: formatAddressList(input.cc ?? []),
       bcc: formatAddressList(input.bcc ?? []),
       subject: input.subject,
       bodyText: input.body
     })
-    logger.mail.info(`Mail sent via Resend (${resend.id})`)
     return toMailDto(row, [])
   }
 
