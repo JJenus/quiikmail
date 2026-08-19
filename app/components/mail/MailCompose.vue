@@ -107,7 +107,7 @@ const headerButtonClass = 'text-inverted/60 hover:text-inverted hover:bg-white/1
     <template #body>
       <div
         v-if="!compose.minimized"
-        class="flex flex-col flex-1 min-h-0"
+        class="flex flex-col h-full min-h-0"
       >
         <div class="border-b border-default">
           <!-- From -->
