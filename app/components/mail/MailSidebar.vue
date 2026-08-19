@@ -20,6 +20,7 @@ const otherFolders = [
 
 const labelsOpen = ref(true)
 const otherOpen = ref(true)
+const collapsed = ref(false)
 
 // Storage mock: 10.06 MB / 200 MB
 const storageUsed = 10.06
@@ -30,6 +31,9 @@ const storagePercent = (storageUsed / storageTotal) * 100
 <template>
   <UDashboardSidebar
     v-model:open="state.sidebarOpen"
+    v-model:collapsed="collapsed"
+    collapsible
+    :collapsed-size="64"
     :default-size="256"
     :ui="{
       root: 'md:flex min-h-0!',
@@ -39,32 +43,46 @@ const storagePercent = (storageUsed / storageTotal) * 100
     }"
   >
     <!-- Logo row + compose button -->
-    <template #header>
-      <div class="flex items-center justify-between w-full gap-2 px-1">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="size-8 rounded-xl bg-primary flex items-center justify-center shrink-0">
+    <template #header="{ collapsed: isCollapsed, collapse }">
+      <div
+        class="flex items-center justify-between w-full gap-2 px-1"
+        :class="isCollapsed ? 'flex-col gap-3' : ''"
+      >
+        <UButton
+          color="neutral"
+          variant="ghost"
+          square
+          size="sm"
+          class="shrink-0"
+          :aria-label="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+          @click="collapse(!isCollapsed)"
+        >
+          <div class="size-8 rounded-xl bg-primary flex items-center justify-center">
             <UIcon
               name="i-lucide-mail"
               class="size-4 text-inverted"
             />
           </div>
+        </UButton>
+        <template v-if="!isCollapsed">
           <span class="text-[15px] font-bold text-highlighted tracking-tight truncate">
             QuiikMail
           </span>
-        </div>
-        <UButton
-          icon="i-lucide-x"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          square
-          class="md:hidden"
-          aria-label="Close sidebar"
-          @click="state.sidebarOpen = false"
-        />
+          <UButton
+            icon="i-lucide-panel-left-close"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            square
+            class="text-dimmed hover:text-default"
+            aria-label="Collapse sidebar"
+            @click="collapse(true)"
+          />
+        </template>
       </div>
 
       <UButton
+        v-if="!isCollapsed"
         color="primary"
         block
         class="py-2.5 rounded-xl"
@@ -78,10 +96,19 @@ const storagePercent = (storageUsed / storageTotal) * 100
           />
         </template>
       </UButton>
+      <UButton
+        v-else
+        icon="i-lucide-pencil-line"
+        color="primary"
+        square
+        class="rounded-xl"
+        aria-label="Compose"
+        @click="openCompose()"
+      />
     </template>
 
     <!-- Folder navigation -->
-    <template #default>
+    <template #default="{ collapsed: isCollapsed }">
       <MailSidebarItem
         v-for="f in mainFolders"
         :key="f.key"
@@ -89,11 +116,15 @@ const storagePercent = (storageUsed / storageTotal) * 100
         :label="f.label"
         :badge="unreadCount(f.key)"
         :active="state.activeFolder === f.key"
+        :collapsed="isCollapsed"
         @click="setFolder(f.key)"
       />
 
       <!-- Other section -->
-      <div class="pt-0">
+      <div
+        v-if="!isCollapsed"
+        class="pt-0"
+      >
         <UButton
           color="neutral"
           variant="ghost"
@@ -119,6 +150,18 @@ const storagePercent = (storageUsed / storageTotal) * 100
           />
         </div>
       </div>
+      <template v-else>
+        <MailSidebarItem
+          v-for="f in otherFolders"
+          :key="f.key"
+          :icon="f.icon"
+          :label="f.label"
+          :badge="unreadCount(f.key)"
+          :active="state.activeFolder === f.key"
+          :collapsed="true"
+          @click="setFolder(f.key)"
+        />
+      </template>
 
       <!-- Labels section -->
       <div class="pt-0">
@@ -163,8 +206,11 @@ const storagePercent = (storageUsed / storageTotal) * 100
     </template>
 
     <!-- Storage bar -->
-    <template #footer>
-      <div class="w-full">
+    <template #footer="{ collapsed: isCollapsed }">
+      <div
+        v-if="!isCollapsed"
+        class="w-full"
+      >
         <div class="flex items-center justify-between mb-1.5">
           <span class="text-[11px] text-dimmed">
             {{ storageUsed }} MB ({{ storagePercent.toFixed(0) }}%) / {{ storageTotal }} MB
