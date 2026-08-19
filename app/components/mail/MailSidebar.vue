@@ -101,6 +101,7 @@ const storagePercent = (storageUsed / storageTotal) * 100
         icon="i-lucide-pencil-line"
         color="primary"
         square
+        size="sm"
         class="rounded-xl"
         aria-label="Compose"
         @click="openCompose()"
@@ -164,7 +165,10 @@ const storagePercent = (storageUsed / storageTotal) * 100
       </template>
 
       <!-- Labels section -->
-      <div class="pt-0">
+      <div
+        v-if="!isCollapsed"
+        class="pt-0"
+      >
         <UButton
           color="neutral"
           variant="ghost"
