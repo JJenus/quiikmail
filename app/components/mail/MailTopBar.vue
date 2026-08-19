@@ -80,17 +80,16 @@ async function runSync() {
 <template>
   <UDashboardNavbar
     :toggle="false"
-    class="hidden md:flex"
     :ui="{ center: 'flex' }"
   >
-    <!-- Search -->
+    <!-- Search (mobile search lives in MailList) -->
     <template #default>
       <UInput
         v-model="state.searchQuery"
         icon="i-lucide-search"
         placeholder="Search mail here..."
         variant="subtle"
-        class="w-56 xl:w-72"
+        class="hidden md:block w-56 xl:w-72"
       >
         <template
           v-if="state.searchQuery"
@@ -121,15 +120,16 @@ async function runSync() {
           variant="ghost"
           size="sm"
           class="px-2.5"
+          :aria-label="`Mailbox: ${activeMailbox?.name ?? 'No mailbox'}`"
         >
           <UIcon
             name="i-lucide-inbox"
             class="size-4 text-muted"
           />
-          <span class="max-w-28 truncate text-default">{{ activeMailbox?.name ?? 'No mailbox' }}</span>
+          <span class="hidden sm:block max-w-28 truncate text-default">{{ activeMailbox?.name ?? 'No mailbox' }}</span>
           <UIcon
             name="i-lucide-chevron-down"
-            class="size-3.5 text-dimmed"
+            class="hidden sm:block size-3.5 text-dimmed"
           />
         </UButton>
       </UDropdownMenu>
@@ -175,7 +175,7 @@ async function runSync() {
           </span>
           <UIcon
             name="i-lucide-chevron-down"
-            class="size-3.5 text-dimmed"
+            class="hidden sm:block size-3.5 text-dimmed"
           />
         </UButton>
       </UDropdownMenu>
