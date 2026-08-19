@@ -26,6 +26,9 @@ export default defineNuxtConfig({
 
   nitro: {
     errorHandler: './server/error-handler.ts',
+    experimental: {
+      tasks: true
+    },
     scheduledTasks: {
       '*/5 * * * *': ['imap-sync']
     }
