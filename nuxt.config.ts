@@ -1,3 +1,10 @@
+import { config as loadDotenv } from 'dotenv'
+import { existsSync } from 'node:fs'
+
+if (process.env.NODE_ENV !== 'production' && existsSync('.env.dev')) {
+  loadDotenv({ path: '.env.dev', override: true })
+}
+
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
@@ -17,9 +24,11 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    databaseUrl: process.env.NUXT_MAIL_DATABASE_URL,
-    encKey: process.env.NUXT_MAIL_ENC_KEY,
-    mailAppUrl: process.env.NUXT_MAIL_APP_URL
+    mail: {
+      databaseUrl: process.env.NUXT_MAIL_DATABASE_URL,
+      encKey: process.env.NUXT_MAIL_ENC_KEY,
+      mailAppUrl: process.env.NUXT_MAIL_APP_URL
+    }
   },
 
   compatibilityDate: '2026-06-30',

@@ -23,9 +23,9 @@ export function getEnvConfig(): EnvConfig {
   if (cached) return cached
   const runtime = useRuntimeConfig()
   const parsed = EnvSchema.safeParse({
-    databaseUrl: runtime.databaseUrl,
-    encKey: runtime.encKey,
-    mailAppUrl: runtime.mailAppUrl
+    databaseUrl: runtime.mail?.databaseUrl || process.env.NUXT_MAIL_DATABASE_URL,
+    encKey: runtime.mail?.encKey || process.env.NUXT_MAIL_ENC_KEY,
+    mailAppUrl: runtime.mail?.mailAppUrl || process.env.NUXT_MAIL_APP_URL
   })
   if (!parsed.success) {
     throw new Error(`Invalid server configuration: ${parsed.error.issues.map(i => i.message).join(', ')}`)
