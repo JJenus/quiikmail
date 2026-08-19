@@ -61,8 +61,8 @@ server/
 ## Setup
 
 1. Postgres must be running; create the dev role/db (`quiikmail`/`quiikmail`) and copy `.env.example` → `.env` (DB URL, `NUXT_MAIL_ENC_KEY`, `NUXT_SESSION_PASSWORD`, `NUXT_MAIL_APP_URL`).
-2. `pnpm db:push` — sync the Drizzle schema.
-3. `pnpm dev` — http://localhost:3000
+2. `pnpm db:push` - sync the Drizzle schema.
+3. `pnpm dev` - http://localhost:3000
 4. Register an account, then connect a mailbox from the setup modal with a Resend API key.
 
 ## Dev
