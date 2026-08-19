@@ -296,6 +296,29 @@ export function useMailStore() {
     state.setupOpen = false
   }
 
+  /**
+   * Resets the module-level singleton to its initial state - must run on
+   * sign-out, otherwise the next user logged in via SPA navigation would
+   * still see the previous user's mailboxes and mails.
+   */
+  function resetState() {
+    state.mails = []
+    state.selectedId = null
+    state.activeFolder = 'inbox'
+    state.searchQuery = ''
+    state.loading = false
+    state.compose = defaultCompose()
+    state.selectedIds = new Set()
+    state.sidebarOpen = false
+    state.mailboxes = []
+    state.activeMailboxId = null
+    state.initialized = false
+    state.syncing = false
+    state.counts = {}
+    state.setupOpen = false
+    localStorage.removeItem('quiikmail-mailbox')
+  }
+
   return {
     state,
     activeMailbox,
@@ -327,6 +350,7 @@ export function useMailStore() {
     replyTo,
     forwardMail,
     openSetup,
-    closeSetup
+    closeSetup,
+    resetState
   }
 }

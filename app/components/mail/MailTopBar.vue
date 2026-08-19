@@ -3,7 +3,7 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import { useMailStore } from '~/composables/useMailStore'
 import { useMailFormat } from '~/composables/useMailFormat'
 
-const { state, activeMailbox, syncNow, setActiveMailbox, refreshMails, openSetup } = useMailStore()
+const { state, activeMailbox, syncNow, setActiveMailbox, refreshMails, openSetup, resetState } = useMailStore()
 const { getInitials, getAvatarBg } = useMailFormat()
 const session = useUserSession()
 
@@ -45,6 +45,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
       color: 'error',
       onSelect: async () => {
         await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+        resetState()
         await session.fetch().catch(() => {})
         await navigateTo('/login')
       }
