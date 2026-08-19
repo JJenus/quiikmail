@@ -12,6 +12,8 @@ export interface FetchMailsOptions {
   page?: number
   limit?: number
   search?: string
+  unread?: boolean
+  withAttachments?: boolean
 }
 
 export interface SendMailPayload {
@@ -60,7 +62,9 @@ export function createMailService(): MailService {
           folder: opts.folder,
           page: opts.page ?? 1,
           limit: opts.limit ?? 50,
-          search: opts.search || undefined
+          search: opts.search || undefined,
+          unread: opts.unread === undefined ? undefined : String(opts.unread),
+          withAttachments: opts.withAttachments === undefined ? undefined : String(opts.withAttachments)
         }
       })
     },

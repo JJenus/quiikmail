@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, inArray, or } from 'drizzle-orm'
+import { and, count, desc, eq, exists, ilike, inArray, or } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import { getDatabase } from '../../core/database'
 import { mails, type Mail } from '../../schemas/mails'
@@ -10,6 +10,8 @@ export interface MailQuery {
   mailboxId: string
   folder?: string
   search?: string
+  unread?: boolean
+  withAttachments?: boolean
   page?: number
   limit?: number
 }
@@ -56,6 +58,19 @@ export class MailRepository {
           ilike(mails.fromName, like),
           ilike(mails.bodyText, like)
         )!
+      )
+    }
+    if (query.unread) {
+      conditions.push(eq(mails.read, false))
+    }
+    if (query.withAttachments) {
+      conditions.push(
+        exists(
+          this.db
+            .select({ id: attachments.id })
+            .from(attachments)
+            .where(eq(attachments.mailId, mails.id))
+        )
       )
     }
 

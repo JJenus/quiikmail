@@ -243,50 +243,6 @@ const headerButtonClass = 'text-inverted/60 hover:text-inverted hover:bg-white/1
           Could not send — check the mailbox send-from address and try again
         </p>
         <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-0.5">
-            <UButton
-              icon="i-lucide-type"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              square
-            />
-            <UButton
-              icon="i-lucide-smile"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              square
-            />
-            <UButton
-              icon="i-lucide-paperclip"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              square
-            />
-            <UButton
-              icon="i-lucide-link"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              square
-            />
-            <UButton
-              icon="i-lucide-image"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              square
-            />
-            <UButton
-              icon="i-lucide-more-horizontal"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              square
-            />
-          </div>
           <div class="flex items-center gap-2">
             <UButton
               label="Save draft"

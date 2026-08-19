@@ -37,6 +37,7 @@ export interface MailboxDto {
   senders: SenderDto[]
   inboundAddress: string | null
   webhookConfigured: boolean
+  imapHost: string | null
   lastSyncedAt: string | null
   createdAt: string
 }
@@ -66,6 +67,7 @@ export function toMailboxDto(mailbox: Mailbox, senders: MailboxSender[] = []): M
     senders: senders.map(toSenderDto),
     inboundAddress: mailbox.inboundAddress,
     webhookConfigured: Boolean(mailbox.resendWebhookId),
+    imapHost: mailbox.imapHost,
     lastSyncedAt: mailbox.lastSyncedAt ? mailbox.lastSyncedAt.toISOString() : null,
     createdAt: mailbox.createdAt.toISOString()
   }

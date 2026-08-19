@@ -425,6 +425,19 @@ onMounted(() => {
               class="w-full"
               @update:model-value="selectedId = $event ?? null"
             />
+            <div class="flex items-center gap-2 text-xs text-dimmed">
+              <UIcon
+                name="i-lucide-history"
+                class="size-3.5"
+              />
+              <span v-if="selectedMailbox?.lastSyncedAt">
+                Last synced
+                {{ new Date(selectedMailbox.lastSyncedAt).toLocaleString() }}
+              </span>
+              <span v-else>
+                Never synced
+              </span>
+            </div>
           </UFormField>
 
           <div
@@ -626,6 +639,18 @@ onMounted(() => {
                     class="w-full"
                   />
                 </UFormField>
+                <div class="flex items-center gap-2 text-sm text-muted">
+                  <UIcon
+                    :name="selectedMailbox.imapHost ? 'i-lucide-webhook' : 'i-lucide-alert-circle'"
+                    class="size-4"
+                    :class="selectedMailbox.imapHost ? 'text-emerald-500' : 'text-warning'"
+                  />
+                  <span>
+                    {{ selectedMailbox.imapHost
+                      ? `Incoming polling enabled${selectedMailbox.imapHost ? ` on ${selectedMailbox.imapHost}` : ''} - new mail arrives automatically`
+                      : 'Incoming polling disabled - fill in IMAP details to receive mail' }}
+                  </span>
+                </div>
               </div>
             </template>
 

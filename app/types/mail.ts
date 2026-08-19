@@ -1,5 +1,7 @@
 export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'important' | 'snoozed' | 'archive' | 'spam' | 'trash'
 
+export type MailFilter = 'all' | 'unread' | 'attachments'
+
 export interface MailAddress {
   name: string | null
   email: string
@@ -62,6 +64,7 @@ export interface MailState {
   selectedId: string | null
   activeFolder: MailFolder
   searchQuery: string
+  filter: MailFilter
   loading: boolean
   compose: ComposeState
   selectedIds: Set<string>

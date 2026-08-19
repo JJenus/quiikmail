@@ -1,7 +1,7 @@
 import { createMailService } from '~/services/mailService'
 import { authService } from '~/services/authService'
 import { mailboxService } from '~/services/mailboxService'
-import type { Mail, MailFolder, MailState, MailLabel, ComposeState } from '~/types/mail'
+import type { Mail, MailFolder, MailFilter, MailState, MailLabel, ComposeState } from '~/types/mail'
 import type { MailboxDto } from '~/types/mailbox'
 
 const service = createMailService()
@@ -40,6 +40,7 @@ const state = reactive<MailStateExtended>({
   selectedId: null,
   activeFolder: 'inbox',
   searchQuery: '',
+  filter: 'all',
   loading: false,
   compose: defaultCompose(),
   selectedIds: new Set(),
@@ -71,7 +72,9 @@ async function loadFolder(folder: MailFolder, search?: string) {
       mailboxId,
       page: 1,
       limit: 50,
-      search: search ?? state.searchQuery
+      search: search ?? state.searchQuery,
+      unread: state.filter === 'unread',
+      withAttachments: state.filter === 'attachments'
     })
     state.mails = res.rows
     state.counts = res.counts
@@ -175,6 +178,14 @@ export function useMailStore() {
 
   async function refreshMails() {
     await loadFolder(state.activeFolder, state.searchQuery)
+  }
+
+  async function setFilter(filter: MailFilter) {
+    if (filter === state.filter) return
+    state.filter = filter
+    state.selectedId = null
+    state.selectedIds = new Set()
+    await loadFolder(state.activeFolder)
   }
 
   function toggleStar(id: string) {
@@ -306,6 +317,7 @@ export function useMailStore() {
     state.selectedId = null
     state.activeFolder = 'inbox'
     state.searchQuery = ''
+    state.filter = 'all'
     state.loading = false
     state.compose = defaultCompose()
     state.selectedIds = new Set()
@@ -334,6 +346,7 @@ export function useMailStore() {
     selectMail,
     setFolder,
     refreshMails,
+    setFilter,
     toggleStar,
     markRead,
     moveToFolder,

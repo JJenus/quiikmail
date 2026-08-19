@@ -11,6 +11,8 @@ export interface MailListQuery {
   mailboxId?: string
   folder?: string
   search?: string
+  unread?: boolean
+  withAttachments?: boolean
   page?: number
   limit?: number
 }
@@ -104,6 +106,8 @@ export class MailService {
       mailboxId,
       folder: query.folder,
       search: query.search,
+      unread: query.unread,
+      withAttachments: query.withAttachments,
       page,
       limit
     })

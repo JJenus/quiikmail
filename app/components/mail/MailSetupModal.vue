@@ -243,15 +243,63 @@ async function finish() {
           v-if="step === 1"
           class="flex flex-col gap-4"
         >
-          <USegmented
-            v-model="provider"
-            :items="[
-              { label: 'Resend', value: 'resend' },
-              { label: 'SMTP / IMAP', value: 'smtp' }
-            ]"
-            size="sm"
-            class="w-full"
-          />
+          <div class="space-y-2">
+            <p class="text-sm font-semibold text-default">
+              Connection type
+            </p>
+            <div
+              class="grid grid-cols-2 gap-3"
+              role="radiogroup"
+              aria-label="Connection type"
+            >
+              <div
+                role="radio"
+                :aria-checked="provider === 'resend'"
+                tabindex="0"
+                class="relative flex cursor-pointer flex-col items-start gap-1.5 rounded-xl border p-3.5 text-left transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                :class="provider === 'resend' ? 'border-primary/60 bg-primary/5 ring-2 ring-primary/20' : 'border-default bg-default hover:bg-elevated'"
+                @click="provider = 'resend'"
+                @keydown.enter.prevent="provider = 'resend'"
+                @keydown.space.prevent="provider = 'resend'"
+              >
+                <UIcon
+                  name="i-lucide-zap"
+                  class="size-5"
+                  :class="provider === 'resend' ? 'text-primary' : 'text-dimmed'"
+                />
+                <span class="text-sm font-semibold text-default">Resend API</span>
+                <span class="text-xs text-dimmed leading-snug">Use a Resend API key - webhook receiving included</span>
+                <UIcon
+                  v-if="provider === 'resend'"
+                  name="i-lucide-circle-check"
+                  class="absolute top-2.5 right-2.5 size-4 text-primary"
+                />
+              </div>
+              <div
+                role="radio"
+                :aria-checked="provider === 'smtp'"
+                tabindex="0"
+                class="relative flex cursor-pointer flex-col items-start gap-1.5 rounded-xl border p-3.5 text-left transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                :class="provider === 'smtp' ? 'border-primary/60 bg-primary/5 ring-2 ring-primary/20' : 'border-default bg-default hover:bg-elevated'"
+                @click="provider = 'smtp'"
+                @keydown.enter.prevent="provider = 'smtp'"
+                @keydown.space.prevent="provider = 'smtp'"
+              >
+                <UIcon
+                  name="i-lucide-server"
+                  class="size-5"
+                  :class="provider === 'smtp' ? 'text-primary' : 'text-dimmed'"
+                />
+                <span class="text-sm font-semibold text-default">SMTP / IMAP</span>
+                <span class="text-xs text-dimmed leading-snug">Connect your own mail server - IMAP polling optional</span>
+                <UIcon
+                  v-if="provider === 'smtp'"
+                  name="i-lucide-circle-check"
+                  class="absolute top-2.5 right-2.5 size-4 text-primary"
+                />
+              </div>
+            </div>
+          </div>
 
           <UFormField label="Mailbox name">
             <UInput

@@ -2,6 +2,7 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useMailStore } from '~/composables/useMailStore'
 import { useMailFormat } from '~/composables/useMailFormat'
+import { sanitizeMailHtml, linkifyMailText } from '~/utils/mailHtml'
 
 const {
   state, selectedMail, toggleStar,
@@ -11,10 +12,18 @@ const { formatFullDate, getInitials, getAvatarBg } = useMailFormat()
 
 const mail = selectedMail
 const showDetails = ref(false)
-const replyBody = ref('')
+
+const mailBodyHtml = computed(() => {
+  const html = mail.value?.bodyHtml
+  return html ? sanitizeMailHtml(html) : ''
+})
+
+const mailBodyText = computed(() => {
+  if (!mail.value || mail.value.bodyHtml) return ''
+  return linkifyMailText(mail.value.body)
+})
 
 watch(() => mail.value?.id, () => {
-  replyBody.value = ''
   showDetails.value = false
 })
 
@@ -276,9 +285,24 @@ const moreActions: DropdownMenuItem[] = [
         <USeparator />
 
         <!-- Body -->
-        <div class="text-sm text-default leading-relaxed whitespace-pre-wrap">
-          {{ mail.body }}
+        <div
+          v-if="mailBodyHtml"
+          class="text-sm text-default leading-relaxed"
+        >
+          <ClientOnly>
+            <!-- eslint-disable-next-line vue/no-v-html -- sanitized by DOMPurify in utils/mailHtml.ts -->
+            <div
+              class="mail-html-body"
+              v-html="mailBodyHtml"
+            />
+          </ClientOnly>
         </div>
+        <!-- eslint-disable-next-line vue/no-v-html -- text escaped then linkified, no raw HTML -->
+        <div
+          v-else
+          class="text-sm text-default leading-relaxed whitespace-pre-wrap"
+          v-html="mailBodyText"
+        />
 
         <!-- Attachments -->
         <div
@@ -297,124 +321,20 @@ const moreActions: DropdownMenuItem[] = [
           </div>
         </div>
 
-        <!-- ── Inline reply box ── -->
-        <div class="border border-default rounded-2xl overflow-hidden shadow-sm bg-default">
-          <!-- To chip row -->
-          <div class="flex items-center gap-2 px-4 py-2.5 border-b border-default">
-            <span class="text-xs text-dimmed shrink-0">To</span>
-            <div class="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
-              <UBadge
-                color="primary"
-                variant="subtle"
-                size="sm"
-              >
-                {{ mail.from.name ?? mail.from.email }}
-                <UButton
-                  icon="i-lucide-x"
-                  color="primary"
-                  variant="link"
-                  size="xs"
-                  square
-                  class="ms-0.5"
-                  aria-label="Remove recipient"
-                />
-              </UBadge>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <UButton
-                label="Cc"
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                class="text-dimmed"
-              />
-              <UButton
-                label="Bcc"
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                class="text-dimmed"
-              />
-              <UButton
-                icon="i-lucide-maximize-2"
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                square
-              />
-            </div>
-          </div>
-
-          <!-- Textarea -->
-          <UTextarea
-            v-model="replyBody"
-            placeholder="Write your reply..."
-            variant="none"
-            :rows="4"
-            class="w-full"
-            :ui="{ base: 'w-full resize-none px-4 py-3 text-[13px] leading-relaxed' }"
+        <!-- Reply / forward actions -->
+        <div class="flex items-center gap-2">
+          <UButton
+            icon="i-lucide-corner-up-left"
+            label="Reply"
+            @click="replyTo(mail)"
           />
-
-          <!-- Formatting toolbar + Send -->
-          <div class="flex items-center justify-between px-3 py-2.5 border-t border-default">
-            <div class="flex items-center gap-0.5">
-              <UButton
-                icon="i-lucide-type"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-              />
-              <UButton
-                icon="i-lucide-bold"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-              />
-              <UButton
-                icon="i-lucide-italic"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-              />
-              <UButton
-                icon="i-lucide-smile"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-              />
-              <UButton
-                icon="i-lucide-paperclip"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-              />
-              <UButton
-                icon="i-lucide-link"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-              />
-              <UButton
-                icon="i-lucide-more-horizontal"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-              />
-            </div>
-            <UButton
-              icon="i-lucide-send"
-              label="Send"
-              :disabled="!replyBody.trim()"
-              @click="replyTo(mail); replyBody = ''"
-            />
-          </div>
+          <UButton
+            icon="i-lucide-corner-up-right"
+            label="Forward"
+            color="neutral"
+            variant="outline"
+            @click="forwardMail(mail)"
+          />
         </div>
 
         <!-- Bottom spacing -->
@@ -423,3 +343,30 @@ const moreActions: DropdownMenuItem[] = [
     </div>
   </div>
 </template>
+
+<style scoped>
+.mail-html-body {
+  overflow-wrap: break-word;
+}
+.mail-html-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+}
+.mail-html-body :deep(a) {
+  color: rgb(var(--ui-color-primary-600));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dark .mail-html-body :deep(a) {
+  color: rgb(var(--ui-color-primary-400));
+}
+.mail-html-body :deep(blockquote) {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid rgb(var(--ui-color-primary-200));
+}
+.dark .mail-html-body :deep(blockquote) {
+  border-left-color: rgb(var(--ui-color-primary-500));
+}
+</style>

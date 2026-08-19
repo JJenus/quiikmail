@@ -14,6 +14,7 @@ export interface MailboxDto {
   senders: SenderDto[]
   inboundAddress: string | null
   webhookConfigured: boolean
+  imapHost: string | null
   lastSyncedAt: string | null
   createdAt: string
 }

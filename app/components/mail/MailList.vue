@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useMailStore } from '~/composables/useMailStore'
+import type { MailFilter } from '~/types/mail'
 
 const {
   state, folderMails, unreadCount,
   selectAll, clearSelection, deleteMails,
-  archiveMails, markRead, isSelected
+  archiveMails, markRead, isSelected, setFilter
 } = useMailStore()
 
 const folderLabels: Record<string, string> = {
@@ -13,10 +14,22 @@ const folderLabels: Record<string, string> = {
   archive: 'Archived', spam: 'Spam', trash: 'Trash'
 }
 
+const filterItems: { label: string, icon: string, value: MailFilter }[] = [
+  { label: 'All mail', icon: 'i-lucide-inbox', value: 'all' },
+  { label: 'Unread', icon: 'i-lucide-mail-open', value: 'unread' },
+  { label: 'Has attachments', icon: 'i-lucide-paperclip', value: 'attachments' }
+]
+
 const anySelected = computed(() => state.selectedIds.size > 0)
 const allSelected = computed(() =>
   folderMails.value.length > 0 && folderMails.value.every(m => isSelected(m.id))
 )
+
+const emptyDescription = computed(() => {
+  if (state.searchQuery) return 'No messages match your search.'
+  if (state.filter !== 'all') return 'No messages match this filter.'
+  return 'This folder is empty.'
+})
 
 function handleSelectAll() {
   if (allSelected.value) clearSelection()
@@ -73,13 +86,16 @@ function handleSelectAll() {
             </UBadge>
           </div>
         </div>
-        <UButton
-          icon="i-lucide-list-filter"
-          label="Filter"
-          color="neutral"
-          variant="outline"
+        <USelectMenu
+          v-model="state.filter"
+          :items="filterItems"
+          value-key="value"
           size="sm"
+          variant="outline"
+          color="neutral"
+          :trailing-icon="'i-lucide-chevrons-up-down'"
           class="shrink-0"
+          @update:model-value="setFilter"
         />
       </div>
     </div>
@@ -162,7 +178,7 @@ function handleSelectAll() {
         variant="naked"
         icon="i-lucide-inbox"
         title="Nothing here"
-        :description="state.searchQuery ? 'No messages match your search.' : 'This folder is empty.'"
+        :description="emptyDescription"
         class="h-full"
       />
     </div>

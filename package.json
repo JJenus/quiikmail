@@ -20,6 +20,7 @@
     "@nuxt/ui": "^4.10.0",
     "@vueuse/core": "^14.4.0",
     "consola": "^3.4.2",
+    "dompurify": "^3.4.13",
     "drizzle-orm": "^0.45.2",
     "h3": "1.15.11",
     "imapflow": "^1.7.1",
