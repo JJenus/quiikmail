@@ -25,3 +25,5 @@ logs
 
 *.zip
 zip
+*.keys.sh
+DEPLOY.private.md

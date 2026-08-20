@@ -8,6 +8,7 @@ QuiikMail - a Nuxt 4 email client with a full Nitro backend (Resend → Postgres
 - `pnpm dev` - dev server at http://localhost:3000 (needs a running Postgres - see `.env`)
 - `pnpm db:push` / `pnpm db:studio` - Drizzle schema sync / studio
 - `pnpm lint` / `pnpm typecheck` - the only checks; there is **no test suite**. `pnpm build` also verifies the compiled output.
+- **CI/CD (GitHub Actions, private repo only)**: `ci.yml` (lint/typecheck/build on every push), `deploy.yml` (on main push: build -> scp `.output` -> AlwaysData API restart; secrets `ALWAYSDATA_SSH_USER/PASSWORD/HOST`, `ALWAYSDATA_API_KEY/ACCOUNT/SITE_ID`), `mirror-public.yml` (force-push main to the public repo; `vars.PUBLIC_REPO` + `secrets.PUBLIC_SYNC_TOKEN`), `sync-public.yml` (hourly: fetch public main, open a `from-public` PR when it is ahead). The public repo ships **only** `ci.yml` - deploy/mirror/sync never leave the private repo. Full ops details live in the gitignored `DEPLOY.private.md`; the tracked `DEPLOY.md` is the redacted public version.
 
 ## Gotchas
 

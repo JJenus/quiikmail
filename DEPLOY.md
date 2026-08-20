@@ -1,58 +1,59 @@
 # Deployment Guide
 
-QuiikMail runs on **AlwaysData** (SSH host `ssh-surfdigitech.alwaysdata.net`, user `surfdigitech`). The site
-lives at `surfdigitech.alwaysdata.net`, serving the Nitro build from `~/app/.output`. Postgres is an AlwaysData
-managed DB.
+> Public version of the private `DEPLOY.md`. Host identifiers are redacted with
+> placeholders - keep this file in sync when the private guide changes.
+
+QuiikMail deploys as a Nitro server (`node .output/server/index.mjs`) behind the hosting
+provider's reverse proxy. This guide describes the general flow; concrete hosts,
+credentials and the production database live only in the maintainer's private
+environment.
 
 ## Environments & env files
 
-| Mode | Command | Env source | Precedence (low → high) |
+| Mode | Command | Env source | Precedence (low to high) |
 | --- | --- | --- | --- |
-| Local dev | `pnpm dev` | `.env.dev` (+ Nuxt's own `.env` load) | `.env` → `.env.dev` |
-| Local preview | `node .output/server/index.mjs` | `.env` + `.env.prod` (runtime plugin `server/plugins/load-env.ts`) | `.env` → `.env.prod` → real env |
-| Production | AlwaysData panel (web process) | panel env vars (real env) | panel vars always win |
+| Local dev | `pnpm dev` | `.env.dev` (+ Nuxt's own `.env` load) | `.env` -> `.env.dev` |
+| Local preview | `node .output/server/index.mjs` | `.env` + `.env.prod` (runtime plugin `server/plugins/load-env.ts`) | `.env` -> `.env.prod` -> real env |
+| Production | hosting panel env vars (real env) | panel vars always win | |
 
 - `.env`, `.env.dev`, `.env.prod` are gitignored (`.env.*` + `!.env.example`). Copy `.env.example` to create them.
-- The runtime env plugin is a no-op on AlwaysData: panel vars are already in `process.env` and are never
-  overridden by files.
+- The runtime env plugin is a no-op when real env vars are already set: they are never overridden by files.
 - `runtimeConfig` uses the nested `mail.*` shape (`NUXT_MAIL_DATABASE_URL`, `NUXT_MAIL_ENC_KEY`,
-  `NUXT_MAIL_APP_URL`) so Nitro's runtime overlay picks up panel vars even when the build baked something else.
+  `NUXT_MAIL_APP_URL`) so the runtime env overlay picks up panel vars even when the build baked something else.
 
 ### Required env vars
 
-- `NUXT_MAIL_DATABASE_URL` – Postgres URL.
-- `NUXT_MAIL_ENC_KEY` – AES-256-GCM key encrypting API keys / SMTP & IMAP credentials / webhook secrets at
-  rest. **Never change it after data exists** – encrypted columns become undecryptable. If it must rotate,
+- `NUXT_MAIL_DATABASE_URL` - Postgres URL.
+- `NUXT_MAIL_ENC_KEY` - AES-256-GCM key encrypting API keys / SMTP & IMAP credentials / webhook secrets at
+  rest. **Never change it after data exists** - encrypted columns become undecryptable. If it must rotate,
   re-enter every mailbox's API key / SMTP / IMAP credentials afterwards.
-- `NUXT_MAIL_APP_URL` – public base URL (used for webhook URLs).
-- `NUXT_SESSION_PASSWORD` – session signing secret (nuxt-auth-utils).
+- `NUXT_MAIL_APP_URL` - public base URL (used for webhook URLs).
+- `NUXT_SESSION_PASSWORD` - session signing secret (nuxt-auth-utils).
 
 ## First run
 
-1. **Provision the DB** on AlwaysData (or wherever the server's `NUXT_MAIL_DATABASE_URL` points). There are no
-   auto-applied migrations: `server/db/migrations/0000_providers_senders.sql` is a **baseline snapshot for
-   documentation only** – it was generated against an already-populated database and contains `CREATE TABLE`
-   for everything; running it on a fresh DB is fine, but running it on a populated one fails. The local/dev
-   workflow is `pnpm db:push` (schema sync, no migration files). For production, schema changes are applied as
-   hand-written **additive** SQL (see "Schema changes on the live DB").
-2. **Set env vars** in the AlwaysData panel (admin.alwaysdata.com → Sites → your site → environment).
+1. **Provision the DB**. There are no auto-applied migrations:
+   `server/db/migrations/0000_providers_senders.sql` is a **baseline snapshot for documentation only** -
+   it was generated against an already-populated database. The local/dev workflow is `pnpm db:push`
+   (schema sync, no migration files). For production, schema changes are applied as hand-written
+   **additive** SQL (see "Schema changes on the live DB").
+2. **Set env vars** in the hosting panel.
 3. **Build + upload**:
    ```bash
    pnpm install && pnpm build
-   cd .output && tar czf /tmp/opencode/quiikmail-output.tar.gz .
-   scp /tmp/opencode/quiikmail-output.tar.gz surfdigitech@ssh-surfdigitech.alwaysdata.net:~
-   ssh surfdigitech@ssh-surfdigitech.alwaysdata.net '
+   cd .output && tar czf /tmp/quiikmail-output.tar.gz .
+   scp /tmp/quiikmail-output.tar.gz <ssh-user>@<ssh-host>:~
+   ssh <ssh-user>@<ssh-host> '
      mv ~/app/.output ~/app/.output.old-$(date +%Y%m%d)
      mkdir -p ~/app/.output
      tar xzf ~/quiikmail-output.tar.gz -C ~/app/.output
      rm ~/quiikmail-output.tar.gz
    '
    ```
-   (The site process is not reachable from SSH; the old build keeps serving until the panel restart.)
-4. **Restart the site** in the AlwaysData panel (admin.alwaysdata.com → Sites → your site → Restart). This is
-   the only step that must be done manually in the panel.
-5. **Verify**: `surfdigitech.alwaysdata.net/login` loads; sign in; compose/send a mail; check the site logs in
-   the panel for the `imap-sync` scheduled task (runs every 5 minutes).
+   (The old build keeps serving until the panel restart.)
+4. **Restart the site** in the hosting panel (the one manual step).
+5. **Verify**: `/login` loads; sign in; compose/send a mail; check the site logs for the `imap-sync`
+   scheduled task (runs every 5 minutes).
 
 ## Subsequent code changes
 
@@ -62,27 +63,25 @@ pnpm lint && pnpm typecheck && pnpm build
 # then restart in the panel
 ```
 
-Rollback: `ssh ... 'mv ~/app/.output ~/app/.output.broken && mv ~/app/.output.old-YYYYMMDD ~/app/.output'`
-+ panel restart.
+Rollback: swap the `.output` directory back to the previous backup, then restart.
 
 ## Schema changes on the live DB
 
 Local schema is kept in sync with `pnpm db:push` (Drizzle push; safe, no migration files). Production gets
-**additive** SQL only – never `CREATE TABLE` on tables that exist, never destructive statements without a
+**additive** SQL only - never `CREATE TABLE` on tables that exist, never destructive statements without a
 backup.
 
 ```bash
 # 1. change server/schemas/*.ts, then sync the local DB
 pnpm db:push
 
-# 2. connect to the prod DB from the AlwaysData console or SSH psql with the panel DB credentials
-ssh surfdigitech@ssh-surfdigitech.alwaysdata.net
-psql "postgres://<user>:<password>@<host>/<db>"
+# 2. connect to the prod DB (panel credentials)
+psql "<DATABASE_URL>"
 
 # 3. run the ALTER statements in a single transaction:
 BEGIN;
 ALTER TABLE ... ADD COLUMN ...;   -- additive, nullable or with DEFAULT
--- backfills if needed: UPDATE ...; 
+-- backfills if needed: UPDATE ...;
 COMMIT;
 
 # 4. verify
@@ -92,8 +91,8 @@ SELECT ... ; -- row counts, new columns, index list
 Conventions used so far (follow them):
 - New columns: nullable or `DEFAULT ... NOT NULL` so existing rows survive.
 - Unique constraints get named indexes (e.g. `mailbox_senders_mailbox_email_idx`).
-- Secrets go into `*_enc` columns (`AES-256-GCM`, `NUXT_MAIL_ENC_KEY`) – never plaintext.
-- After a successful deploy, `pnpm db:push` locally will report "No changes detected" – if it reports a diff,
+- Secrets go into `*_enc` columns (`AES-256-GCM`, `NUXT_MAIL_ENC_KEY`) - never plaintext.
+- After a successful deploy, `pnpm db:push` locally will report "No changes detected" - if it reports a diff,
   the prod SQL missed something.
 - If you prefer tracked migrations: `pnpm db:generate --name=<name>` produces SQL in
   `server/db/migrations/` (the current baseline is `0000_providers_senders.sql`). Only use generated files on
@@ -101,7 +100,7 @@ Conventions used so far (follow them):
 
 ## Known non-issues
 
-- `[Icon] failed to load icon lucide:mail` in the server console: SSR-side iconify resolution warning only –
+- `[Icon] failed to load icon lucide:mail` in the server console: SSR-side iconify resolution warning only -
   icons are bundled and render client-side.
 - `.env` "will not be loaded when running the server in production" warning during `pnpm dev`/`pnpm build`:
   expected; production env comes from panel vars + `server/plugins/load-env.ts`.
