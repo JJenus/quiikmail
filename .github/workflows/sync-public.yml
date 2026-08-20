@@ -5,6 +5,12 @@ name: sync-public
 # CI/CD + deployment run). The branch push and gh pr create both use the
 # built-in GITHUB_TOKEN - no extra secrets needed.
 #
+# Public main is normally exactly one commit ahead of this repo (the strip
+# commit from mirror-public.yml). More than that means a community PR was
+# merged there, so we open the sync PR. The branch is based on public main
+# (which lacks the private workflows); those are restored from origin/main
+# before pushing so merging the PR never deletes them.
+#
 # Note: GitHub disables scheduled workflows after 60 days of repo inactivity;
 # run it manually (workflow_dispatch) if PRs stop appearing.
 
@@ -33,7 +39,7 @@ jobs:
 
       - name: Open sync PR if public is ahead
         run: |
-          if git merge-base --is-ancestor origin/main public/main; then
+          if [ "$(git rev-list --count origin/main..public/main)" -le 1 ]; then
             echo "public is up to date, nothing to do"
             exit 0
           fi

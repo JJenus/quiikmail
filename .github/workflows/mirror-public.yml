@@ -4,13 +4,13 @@ name: mirror-public
 # workflows (deploy/mirror/sync stay here; the public repo only ships
 # ci.yml). Authentication is a write deploy key (secrets.PUBLIC_SYNC_KEY)
 # scoped to the public repo only; the ruleset on public main lists that
-# key as a bypass actor so the push is allowed.
+# key as a bypass actor so the force-push is allowed.
 #
-# The push only happens when the content matches (public main == this
-# tree minus the stripped workflows). If the public repo has commits with
-# new content that hasn't been synced back yet, this skips and lets
-# sync-public.yml open a PR instead - so a mirror can never clobber an
-# unsynced community contribution.
+# The public tip is always one commit ahead of this repo: the "strip"
+# commit that removes the private workflows. Any other public-only commit
+# means a community PR was merged on public before being synced back -
+# then we skip and let sync-public.yml open a PR instead, so a mirror can
+# never clobber an unsynced community contribution.
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
           git rm -q --cached .github/workflows/deploy.yml .github/workflows/mirror-public.yml .github/workflows/sync-public.yml
           git commit -q -m "chore: strip private workflows from public mirror"
 
-      - name: Push to public repo when content matches
+      - name: Push to public repo
         env:
           PUBLIC_REPO: ${{ vars.PUBLIC_REPO }}
           SSH_KEY: ${{ secrets.PUBLIC_SYNC_KEY }}
@@ -48,15 +48,18 @@ jobs:
           git remote add public "git@github.com:${PUBLIC_REPO}.git"
           git fetch -q public main
 
-          # Safe to mirror when the public tree matches this one except for
-          # the private workflows. Any other difference means a community
-          # contribution was merged on public before being synced back -
-          # skip and let sync-public open a PR instead.
-          if git diff --quiet public/main HEAD -- . \
-            ':(exclude).github/workflows/deploy.yml' \
-            ':(exclude).github/workflows/mirror-public.yml' \
-            ':(exclude).github/workflows/sync-public.yml'; then
-            git push -f public HEAD:main
-          else
-            echo "public repo has content not synced back yet - skipping mirror, sync-public will open a PR"
+          # Public-only commits: exactly 1 (the strip commit) is healthy.
+          # More than that means community content sits on public main.
+          PUB_EXTRA=$(git rev-list --count origin/main..public/main)
+          if [ "$PUB_EXTRA" -gt 1 ]; then
+            echo "public repo has community content not synced back yet - skipping mirror, sync-public will open a PR"
+            exit 0
           fi
+
+          # Nothing new to mirror (public tip == strip commit of our HEAD).
+          if [ "$(git rev-parse public/main^)" = "$(git rev-parse HEAD)" ]; then
+            echo "public repo is up to date"
+            exit 0
+          fi
+
+          git push -f public HEAD:main
