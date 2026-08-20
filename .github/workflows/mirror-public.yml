@@ -29,6 +29,8 @@ jobs:
 
       - name: Strip private workflows
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git rm -q --cached .github/workflows/deploy.yml .github/workflows/mirror-public.yml .github/workflows/sync-public.yml
           git commit -q -m "chore: strip private workflows from public mirror"
 
