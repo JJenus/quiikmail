@@ -44,6 +44,8 @@ jobs:
           fi
 
           git switch -c sync-from-public public/main
+          git checkout origin/main -- .github/workflows/deploy.yml .github/workflows/mirror-public.yml .github/workflows/sync-public.yml
+          git commit -q -m "chore: keep private workflows out of the sync PR" || true
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" sync-from-public
 
           gh pr create \

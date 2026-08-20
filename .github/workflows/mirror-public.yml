@@ -1,9 +1,16 @@
 name: mirror-public
 
-# Force-pushes this repo's main to the public repo. The public repo only
-# ships ci.yml, so this never triggers anything there. Authentication is a
-# write deploy key (secrets.PUBLIC_SYNC_KEY) that is scoped to the public
-# repo only.
+# Pushes this repo's main to the public repo, stripped of the private
+# workflows (deploy/mirror/sync stay here; the public repo only ships
+# ci.yml). Authentication is a write deploy key (secrets.PUBLIC_SYNC_KEY)
+# scoped to the public repo only; the ruleset on public main lists that
+# key as a bypass actor so the push is allowed.
+#
+# The push only happens when the content matches (public main == this
+# tree minus the stripped workflows). If the public repo has commits with
+# new content that hasn't been synced back yet, this skips and lets
+# sync-public.yml open a PR instead - so a mirror can never clobber an
+# unsynced community contribution.
 
 on:
   push:
@@ -20,7 +27,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push to public repo
+      - name: Strip private workflows
+        run: |
+          git rm -q --cached .github/workflows/deploy.yml .github/workflows/mirror-public.yml .github/workflows/sync-public.yml
+          git commit -q -m "chore: strip private workflows from public mirror"
+
+      - name: Push to public repo when content matches
         env:
           PUBLIC_REPO: ${{ vars.PUBLIC_REPO }}
           SSH_KEY: ${{ secrets.PUBLIC_SYNC_KEY }}
@@ -29,5 +41,13 @@ jobs:
           chmod 600 /tmp/gh_key
           mkdir -p ~/.ssh
           ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          GIT_SSH_COMMAND="ssh -i /tmp/gh_key -o IdentitiesOnly=yes" \
-            git push -f "git@github.com:${PUBLIC_REPO}.git" HEAD:main
+          export GIT_SSH_COMMAND="ssh -i /tmp/gh_key -o IdentitiesOnly=yes"
+
+          git remote add public "git@github.com:${PUBLIC_REPO}.git"
+          git fetch -q public main
+
+          if git diff --quiet public/main HEAD; then
+            git push -f public HEAD:main
+          else
+            echo "public repo has content not synced back yet - skipping mirror, sync-public will open a PR"
+          fi
