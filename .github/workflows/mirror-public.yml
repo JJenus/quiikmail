@@ -2,9 +2,9 @@ name: mirror-public
 
 # Pushes this repo's main to the public repo, stripped of the private
 # workflows (deploy/mirror/sync stay here; the public repo only ships
-# ci.yml). Authentication is a write deploy key (secrets.PUBLIC_SYNC_KEY)
-# scoped to the public repo only; the ruleset on public main lists that
-# key as a bypass actor so the force-push is allowed.
+# ci.yml). Authentication is a fine-grained PAT (secrets.PUBLIC_SYNC_TOKEN)
+# scoped to the public repo with Contents + Workflows write access - a
+# deploy key cannot push workflow file changes, a PAT can.
 #
 # The public tip is always one commit ahead of this repo: the "strip"
 # commit that removes the private workflows. Any other public-only commit
@@ -37,15 +37,9 @@ jobs:
       - name: Push to public repo
         env:
           PUBLIC_REPO: ${{ vars.PUBLIC_REPO }}
-          SSH_KEY: ${{ secrets.PUBLIC_SYNC_KEY }}
+          TOKEN: ${{ secrets.PUBLIC_SYNC_TOKEN }}
         run: |
-          echo "$SSH_KEY" > /tmp/gh_key
-          chmod 600 /tmp/gh_key
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          export GIT_SSH_COMMAND="ssh -i /tmp/gh_key -o IdentitiesOnly=yes"
-
-          git remote add public "git@github.com:${PUBLIC_REPO}.git"
+          git remote add public "https://x-access-token:${TOKEN}@github.com/${PUBLIC_REPO}.git"
           git fetch -q public main
 
           # Public-only commits: exactly 1 (the strip commit) is healthy.
@@ -63,3 +57,4 @@ jobs:
           fi
 
           git push -f public HEAD:main
+          git remote remove public
