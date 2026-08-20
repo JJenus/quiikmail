@@ -26,6 +26,9 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          # Don't persist the actions token as git credentials - it would
+          # override the PAT used for the public push.
+          persist-credentials: false
 
       - name: Strip private workflows
         run: |
@@ -39,10 +42,6 @@ jobs:
           PUBLIC_REPO: ${{ vars.PUBLIC_REPO }}
           TOKEN: ${{ secrets.PUBLIC_SYNC_TOKEN }}
         run: |
-          # checkout persists an Authorization extraheader (the actions
-          # token) for all github.com requests - it would override the PAT
-          # below, so drop it first.
-          git config --unset-all http.https://github.com/.extraheader || true
           git remote add public "https://x-access-token:${TOKEN}@github.com/${PUBLIC_REPO}.git"
           git fetch -q public main
 
