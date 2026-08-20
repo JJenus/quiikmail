@@ -48,16 +48,15 @@ jobs:
           git remote add public "git@github.com:${PUBLIC_REPO}.git"
           git fetch -q public main
 
-          # Unsynced = commits on public main (besides the strip commits) that
-          # are not in this repo. If any exist, a community PR was merged on
-          # public before being synced back - skip and let sync-public handle it.
-          UNSYNCED=$(git rev-list origin/main..public/main -- . \
+          # Safe to mirror when the public tree matches this one except for
+          # the private workflows. Any other difference means a community
+          # contribution was merged on public before being synced back -
+          # skip and let sync-public open a PR instead.
+          if git diff --quiet public/main HEAD -- . \
             ':(exclude).github/workflows/deploy.yml' \
             ':(exclude).github/workflows/mirror-public.yml' \
-            ':(exclude).github/workflows/sync-public.yml')
-
-          if [ -z "$UNSYNCED" ]; then
+            ':(exclude).github/workflows/sync-public.yml'; then
             git push -f public HEAD:main
           else
-            echo "public repo has unsynced commits - skipping mirror, sync-public will open a PR"
+            echo "public repo has content not synced back yet - skipping mirror, sync-public will open a PR"
           fi
