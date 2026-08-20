@@ -54,8 +54,8 @@ jobs:
           SITE_ID: ${{ secrets.ALWAYSDATA_SITE_ID }}
         run: |
           if [ -z "$API_KEY" ] || [ -z "$SITE_ID" ]; then
-            echo "ALWAYSDATA_API_KEY and ALWAYSDATA_SITE_ID must be set (see DEPLOY.private.md)"
-            exit 1
+            echo "ALWAYSDATA_API_KEY / ALWAYSDATA_SITE_ID not set - new build uploaded, restart skipped (restart manually on the site)"
+            exit 0
           fi
           curl -sfS -X POST --basic --user "$API_KEY account=$ACCOUNT:" \
             "https://api.alwaysdata.com/v1/site/$SITE_ID/restart/"
