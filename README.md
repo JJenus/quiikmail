@@ -22,13 +22,13 @@ app/
 ├── assets/css/main.css          # Custom palette + global styles (dark-aware)
 ├── components/mail/             # All mail-specific components
 │   ├── AttachmentItem.vue       # Download via /api/attachments/:id
-│   ├── MailboxSetupModal.vue    # Setup wizard (modal, 2 steps)
-│   ├── MailCompose.vue          # UModal (desktop) + UDrawer (mobile)
+│   ├── MailSetupModal.vue       # Mailbox setup wizard (modal, 2 steps)
+│   ├── MailCompose.vue          # Single UDrawer (bottom sheet on mobile, floating window on desktop)
 │   ├── MailDetail.vue
 │   ├── MailList.vue
 │   ├── MailListItem.vue
 │   ├── MailSidebar.vue
-│   ├── MailTopBar.vue           # Mailbox switcher, sync, user menu
+│   ├── MailTopBar.vue           # Search, mailbox switcher, sync, theme, user menu
 │   └── SidebarItem.vue
 ├── composables/
 │   ├── useMailStore.ts          # Central reactive state + all actions
@@ -39,22 +39,27 @@ app/
 ├── pages/
 │   ├── index.vue                # App shell (UDashboardGroup: sidebar + list + detail)
 │   ├── login.vue
-│   └── register.vue             # Optional recovery email (separate from mailbox "send from")
+│   ├── register.vue             # Optional recovery email (separate from mailbox "send from")
+│   └── settings.vue             # Account + mailbox settings
 ├── services/
 │   ├── authService.ts           # register / login / logout / me
 │   ├── mailboxService.ts        # CRUD + validate + sync + webhook secret
 │   └── mailService.ts           # Mails, drafts, flags, folders, attachments
-└── types/
-    ├── mail.ts                  # Mail contract shared with the API
-    ├── mailbox.ts               # MailboxDto + API response types
-    └── auth.d.ts                # #auth-utils module augmentation
+├── types/
+│   ├── mail.ts                  # Mail contract shared with the API
+│   ├── mailbox.ts               # MailboxDto + API response types
+│   └── auth.d.ts                # #auth-utils module augmentation
+└── utils/
+    ├── apiError.ts              # API error helper
+    └── mailHtml.ts              # DOMPurify sanitization + plain-text linkify
 server/
 ├── api/                         # Thin route handlers (auth, mailboxes, mails, attachments, webhooks)
 ├── core/                        # errors, logger, crypto (AES-256-GCM), database, env, container (DI)
 ├── middleware/session.ts        # Guards /api/**, skips auth + webhook routes
-├── modules/                     # auth, mailboxes, mails, resend (client + Svix webhook verify), sync
-├── plugins/container.ts         # DI graph
-├── schemas/                     # Drizzle schema (users, mailboxes, mails, attachments)
+├── modules/                     # auth, mailboxes, mails, resend (client + Svix webhook verify), smtp, sync
+├── plugins/                     # DI graph + env file loader
+├── schemas/                     # Drizzle schema (users, mailboxes, mailbox_senders, mails, attachments)
+├── tasks/imap-sync.ts           # Scheduled IMAP polling (Nitro cron)
 └── error-handler.ts             # Error envelope { statusCode, code, message, details? }
 ```
 
