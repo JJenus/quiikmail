@@ -34,12 +34,13 @@ jobs:
       - name: Upload to server
         env:
           SSH_USER: ${{ secrets.ALWAYSDATA_SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+          SSH_KEY: ${{ secrets.ALWAYSDATA_SSH_KEY }}
           SSH_HOST: ${{ secrets.ALWAYSDATA_SSH_HOST }}
         run: |
-          sudo apt-get update && sudo apt-get install -y sshpass
-          sshpass -p "$SSH_PASSWORD" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null quiikmail-output.tar.gz "$SSH_USER@$SSH_HOST":~
-          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SSH_USER@$SSH_HOST" '
+          echo "$SSH_KEY" > /tmp/ad_key
+          chmod 600 /tmp/ad_key
+          scp -i /tmp/ad_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null quiikmail-output.tar.gz "$SSH_USER@$SSH_HOST":~
+          ssh -i /tmp/ad_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SSH_USER@$SSH_HOST" '
             mv ~/app/.output ~/app/.output.old-$(date +%Y%m%d-%H%M%S)
             mkdir -p ~/app/.output
             tar xzf ~/quiikmail-output.tar.gz -C ~/app/.output

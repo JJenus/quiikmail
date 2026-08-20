@@ -2,8 +2,8 @@ name: sync-public
 
 # Fetches the public repo's main and opens a PR into this repo when it is
 # ahead, so community contributions can be reviewed and merged here (where
-# CI/CD + deployment run). gh CLI authenticates with the built-in
-# GITHUB_TOKEN; the PAT secret is only used for the git push.
+# CI/CD + deployment run). The branch push and gh pr create both use the
+# built-in GITHUB_TOKEN - no extra secrets needed.
 #
 # Note: GitHub disables scheduled workflows after 60 days of repo inactivity;
 # run it manually (workflow_dispatch) if PRs stop appearing.
@@ -32,8 +32,6 @@ jobs:
           git remote remove public
 
       - name: Open sync PR if public is ahead
-        env:
-          TOKEN: ${{ secrets.PUBLIC_SYNC_TOKEN }}
         run: |
           if git merge-base --is-ancestor origin/main public/main; then
             echo "public is up to date, nothing to do"
@@ -46,7 +44,7 @@ jobs:
           fi
 
           git switch -c sync-from-public public/main
-          git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" sync-from-public
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" sync-from-public
 
           gh pr create \
             --base main \
